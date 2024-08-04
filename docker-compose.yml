@@ -1,0 +1,25 @@
+version: '3.9'
+services:
+  app:
+    build:
+      context: .
+    #depends_on:
+    #  - db
+    ports:
+      - "80:80"
+    volumes:
+      - ./app:/app
+
+#  db:
+#    image: 'postgres:14-alpine'
+#    restart: always
+#    ports: 
+#      - "5432:5432"
+#    environment:
+#      - DATABASE_HOST=127.0.0.1
+#      - POSTGRES_USER=root
+#      - POSTGRES_PASSWORD=root
+#      - POSTGRES_DB=test_db
+#    volumes:
+#     - ~/app/postgres:/var/lib/postgresql/data
+    
