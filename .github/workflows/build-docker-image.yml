@@ -18,4 +18,6 @@ jobs:
     - name: build
       run: docker build . -t ramoro/convocarte-backend-docker-hub:latest
     - name: publish
-      run: docker push ramoro/convocarte-backend-docker-hub:latest
+      run: |
+       docker login -u ramoro -p ${{ secrets.DOCKERHUB_TOKEN }}
+       docker push ramoro/convocarte-backend-docker-hub:latest
