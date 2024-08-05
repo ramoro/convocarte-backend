@@ -1,0 +1,21 @@
+name: Build and Publish Image To DuckerHub
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+    - name: build
+      run: docker build . -t ramoro/convocarte-backend-docker-hub:latest
+    - name: publish
+       docker push ramoro/convocarte-backend-docker-hub:latest
