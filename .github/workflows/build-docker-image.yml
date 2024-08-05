@@ -18,4 +18,4 @@ jobs:
     - name: build
       run: docker build . -t ramoro/convocarte-backend-docker-hub:latest
     - name: publish
-       docker push ramoro/convocarte-backend-docker-hub:latest
+      run: docker push ramoro/convocarte-backend-docker-hub:latest
