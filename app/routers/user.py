@@ -11,6 +11,7 @@ from schemas.user import CreateUser, UpdateUser, UserResponse
 from database import get_db
 import utils
 import oauth2
+import mailer
 
 router = APIRouter(
     prefix="/users", #Indica que cada endpoint de este router va a comenzar con /users. Evita tener que pegarlo en todos lados
@@ -48,6 +49,9 @@ def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db
         "access_token": access_token
     }
 
+    #Se envia email de verificacion
+    mailer.send_email(new_user.email, "ConvocArte - Verificación de cuenta", context, "email-verification.html")
+    
     return new_user
 
 @router.get('/verification', response_model=UserResponse)

@@ -4,7 +4,6 @@ from database import engine
 from routers import user, auth
 import models
 
-
 app = FastAPI()
 
 origins = [
