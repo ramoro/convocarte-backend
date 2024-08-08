@@ -31,13 +31,18 @@ def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db
     if existing_user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The email is already used.")
 
+    if not utils.is_valid_password(user.password, user.password_confirmation):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid password: passwords must match and must be at least 8 characters long, contain a number, an uppercase letter, a lowercase letter, and a special character (#,-,_,$,%,&,*).")
+    
     #hash the password -> user.password
     hashed_password = utils.hash(user.password)
     user.password = hashed_password
+    dict_user = user.model_dump()
+    dict_user.pop("password_confirmation")
     new_user = models.User(
         #username=user.username, fullname=user.fullname, email=user.email, 
         #password=user.password
-        **user.model_dump()) #Pasamos el modelo de pydantic a diccionario y luego lo desempaquetamos
+        **dict_user) #Pasamos el modelo de pydantic a diccionario y luego lo desempaquetamos
     db.add(new_user)
     db.commit()
     db.refresh(new_user) #devuelve lo que se guardo recien y se almacena en new_user

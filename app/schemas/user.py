@@ -15,6 +15,7 @@ class CreateUser(BaseModel):
     email: EmailStr
     fullname: str
     password: str
+    password_confirmation: str
 
 class UpdateUser(BaseModel): #email no se puede actualizar, por eso no lo agrego
     fullname: str
