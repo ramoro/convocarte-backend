@@ -7,3 +7,11 @@ DATABASE_PASSWORD=pass
 SECRET_KEY=secretkey
 ALGORITHM=algorithm
 ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+#SMTP SERVER CREDENTIALS -> Se usa mailMug para test, con la cuenta rsantos@fi.uba.ar
+SMTP_SERVER=smtp.mailmug.net
+SMTP_SERVER_PORT=port
+SMTP_SERVER_USERNAME=username
+SMTP_SERVER_PASSWORD=pass
+
+NOREPLY_EMAIL=convocartenoreply@gmail.com

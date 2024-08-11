@@ -16,5 +16,6 @@ rsa==4.9
 python-multipart==0.0.6
 pytz==2023.3
 requests==2.31.0
+Jinja2==3.1.2
 #selenium===4.22.0
 #webdriver-manager==4.0.1
