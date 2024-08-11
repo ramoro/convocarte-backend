@@ -1,0 +1,30 @@
+name: Build and Publish Image To DuckerHub
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+    - name: build
+      run: docker build . -t ramoro/convocarte-backend-docker-hub:latest
+    - name: publish
+      run: |
+       docker login -u ramoro -p ${{ secrets.DOCKERHUB_TOKEN }}
+       docker push ramoro/convocarte-backend-docker-hub:latest
+    - name: Deploy
+      # Only run this step if the branch is main
+      if: github.ref == 'refs/heads/main'
+      env:
+        deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      run: |
+        curl "$deploy_url"
