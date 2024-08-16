@@ -59,7 +59,7 @@ def email_verification(token: str):
         return RedirectResponse(url=f"http://localhost:8080/verified-account/None/None")
     
     if not current_user.is_verified:
-        user_repository.update_user(id, {"is_verified": True})
+        user_repository.update_user(current_user.id, {"is_verified": True})
 
     return RedirectResponse(url=f"http://localhost:8080/verified-account/{current_user.id}/{token}")
 
@@ -72,7 +72,7 @@ def password_recovering(request: Request, pass_req: ForgetPasswordRequest):
     if not existing_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid email address.")
     
-    secret_token = oauth2.create_access_token(data = {"user_id": existing_user.email})
+    secret_token = oauth2.create_access_token(data = {"user_id": existing_user.id})
     reset_password_link = f"http://localhost:8080/reset-password/{secret_token}"
 
     context = {
@@ -84,6 +84,26 @@ def password_recovering(request: Request, pass_req: ForgetPasswordRequest):
 
     return {"message": "Email has been sent", "success": True,
         "status_code": status.HTTP_200_OK}
+
+@router.post("/reset-password")
+def reset_password(rfp: ResetForgetPassword):
+    user_repository = UserRepository()
+    token_exception = HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Invalid Password Reset Payload or Reset Link Expired")
+    info = oauth2.verify_access_token(rfp.secret_token, token_exception)
+    
+    if info is None:
+        raise token_exception
+    
+    if rfp.new_password != rfp.password_confirmation:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Passwords must match.")
+    
+    hashed_password = utils.hash(rfp.new_password)
+    user_repository.update_user(info.id, {"password": hashed_password})
+
+    return {'success': True, 'status_code': status.HTTP_200_OK,
+                'message': 'Password Rest Successfull!'}
 
 @router.get("/", response_model=List[UserResponse])
 def list_users(db: Session = Depends(get_db), current_user: models.User = 
