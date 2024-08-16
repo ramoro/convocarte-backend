@@ -7,7 +7,7 @@ from starlette.responses import Response
 from typing import List, Optional
 from sqlalchemy.orm import Session
 import models
-from schemas.user import CreateUser, UpdateUser, UserResponse
+from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword
 from database import get_db
 import utils
 import oauth2
@@ -48,10 +48,11 @@ def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db
     db.refresh(new_user) #devuelve lo que se guardo recien y se almacena en new_user
 
     access_token = oauth2.create_access_token(data = {"user_id": new_user.id})
-
+    email_verification_link = f"http://localhost/users/verification/?token={access_token}"
+    
     context = {
         "request": request,
-        "access_token": access_token
+        "email_verification_link": email_verification_link
     }
 
     #Se envia email de verificacion
@@ -74,6 +75,28 @@ def email_verification(token: str, db: Session = Depends(get_db)):
 
     return RedirectResponse(url=f"http://localhost:8080/verified-account/{current_user.id}/{token}")
 
+@router.post('/password-recovering')
+def password_recovering(request: Request, pass_req: ForgetPasswordRequest, db: Session = Depends(get_db)):
+
+    existing_user = db.query(models.User).filter(
+    (models.User.email == pass_req.email)
+    ).first()
+    
+    if not existing_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid email address.")
+    
+    secret_token = oauth2.create_access_token(data = {"user_id": existing_user.email})
+    reset_password_link = f"http://localhost:8080/reset-password/{secret_token}"
+
+    context = {
+        "request": request,
+        "reset_password_link": reset_password_link
+    }
+    #Se envia email de recuperacion de contraseña
+    mailer.send_email(existing_user.email, "ConvocArte - Recuperación de contraseña", context, "password-recovering.html")
+
+    return {"message": "Email has been sent", "success": True,
+        "status_code": status.HTTP_200_OK}
 
 @router.get("/", response_model=List[UserResponse])
 def list_users(db: Session = Depends(get_db), current_user: models.User = 
