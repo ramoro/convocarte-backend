@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Depends, APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-
+from repository.user import UserRepository
 from starlette import status
 from starlette.responses import Response
 from typing import List, Optional
@@ -20,13 +20,8 @@ router = APIRouter(
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db)):
-    #cursor.execute("""INSERT INTO users (username, fullname, email, password) 
-    #              VALUES (%s, %s, %s, %s) RETURNING *""", (user.username, user.fullname, user.email, user.password ))
-    #new_user = cursor.fetchone()
-    #conn.commit()
-    existing_user = db.query(models.User).filter(
-    (models.User.email == user.email)
-    ).first()
+    user_repository = UserRepository()
+    existing_user = user_repository.get_user_by_email(user.email)
 
     if existing_user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The email is already used.")
@@ -39,13 +34,7 @@ def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db
     user.password = hashed_password
     dict_user = user.model_dump()
     dict_user.pop("password_confirmation")
-    new_user = models.User(
-        #username=user.username, fullname=user.fullname, email=user.email, 
-        #password=user.password
-        **dict_user) #Pasamos el modelo de pydantic a diccionario y luego lo desempaquetamos
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user) #devuelve lo que se guardo recien y se almacena en new_user
+    new_user = user_repository.add_new_user(dict_user)
 
     access_token = oauth2.create_access_token(data = {"user_id": new_user.id})
     email_verification_link = f"http://localhost/users/verification/?token={access_token}"
@@ -61,26 +50,24 @@ def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db
     return new_user
 
 @router.get('/verification', response_model=UserResponse)
-def email_verification(token: str, db: Session = Depends(get_db)):
-    
+def email_verification(token: str):
+    user_repository = UserRepository()
     try:
-        current_user = oauth2.get_current_user(token, db, True)
+        current_user = oauth2.get_current_user(token, user_repository, True)
     except Exception as e:
         #Si el token es invalido, ya sea porque esta falseado o caduco, el usuario no se verifica
         return RedirectResponse(url=f"http://localhost:8080/verified-account/None/None")
     
     if not current_user.is_verified:
-        db.query(models.User).filter(models.User.id == current_user.id).update({"is_verified": True}, synchronize_session=False)
-        db.commit()
+        user_repository.update_user(id, {"is_verified": True})
 
     return RedirectResponse(url=f"http://localhost:8080/verified-account/{current_user.id}/{token}")
 
 @router.post('/password-recovering')
-def password_recovering(request: Request, pass_req: ForgetPasswordRequest, db: Session = Depends(get_db)):
+def password_recovering(request: Request, pass_req: ForgetPasswordRequest):
 
-    existing_user = db.query(models.User).filter(
-    (models.User.email == pass_req.email)
-    ).first()
+    user_repository = UserRepository()  
+    existing_user = user_repository.get_user_by_email(pass_req.email)
     
     if not existing_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid email address.")
