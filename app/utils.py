@@ -17,4 +17,4 @@ def hash(password: str):
 def verify(plain_password, hashed_password):
     """Recibe una contraseña y una contraseña hasheada. Devuelve true en caso de que sean las mismas.
     False en caso contrario."""
-    return pwd_context.verify(plain_password, hashed_password) #Usara la plain password para hashearla y compararla con la password hasheada obtenida de la bdd
+    return pwd_context.verify(plain_password, hashed_password) #Usar la plain password para hashearla y compararla con la password hasheada obtenida de la bdd

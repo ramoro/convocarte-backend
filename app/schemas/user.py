@@ -43,3 +43,11 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     id: int
 
+class ForgetPasswordRequest(BaseModel):
+    email: str
+
+class ResetForgetPassword(BaseModel):
+    secret_token: str
+    new_password: str
+    password_confirmation: str
+

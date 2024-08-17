@@ -1,13 +1,13 @@
 from fastapi import HTTPException, Depends, APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-
+from repository.user import UserRepository
 from starlette import status
 from starlette.responses import Response
 from typing import List, Optional
 from sqlalchemy.orm import Session
 import models
-from schemas.user import CreateUser, UpdateUser, UserResponse
+from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword
 from database import get_db
 import utils
 import oauth2
@@ -20,13 +20,8 @@ router = APIRouter(
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db)):
-    #cursor.execute("""INSERT INTO users (username, fullname, email, password) 
-    #              VALUES (%s, %s, %s, %s) RETURNING *""", (user.username, user.fullname, user.email, user.password ))
-    #new_user = cursor.fetchone()
-    #conn.commit()
-    existing_user = db.query(models.User).filter(
-    (models.User.email == user.email)
-    ).first()
+    user_repository = UserRepository()
+    existing_user = user_repository.get_user_by_email(user.email)
 
     if existing_user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The email is already used.")
@@ -39,19 +34,14 @@ def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db
     user.password = hashed_password
     dict_user = user.model_dump()
     dict_user.pop("password_confirmation")
-    new_user = models.User(
-        #username=user.username, fullname=user.fullname, email=user.email, 
-        #password=user.password
-        **dict_user) #Pasamos el modelo de pydantic a diccionario y luego lo desempaquetamos
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user) #devuelve lo que se guardo recien y se almacena en new_user
+    new_user = user_repository.add_new_user(dict_user)
 
     access_token = oauth2.create_access_token(data = {"user_id": new_user.id})
-
+    email_verification_link = f"http://localhost/users/verification/?token={access_token}"
+    
     context = {
         "request": request,
-        "access_token": access_token
+        "email_verification_link": email_verification_link
     }
 
     #Se envia email de verificacion
@@ -60,20 +50,60 @@ def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db
     return new_user
 
 @router.get('/verification', response_model=UserResponse)
-def email_verification(token: str, db: Session = Depends(get_db)):
-    
+def email_verification(token: str):
+    user_repository = UserRepository()
     try:
-        current_user = oauth2.get_current_user(token, db, True)
+        current_user = oauth2.get_current_user(token, user_repository, True)
     except Exception as e:
         #Si el token es invalido, ya sea porque esta falseado o caduco, el usuario no se verifica
         return RedirectResponse(url=f"http://localhost:8080/verified-account/None/None")
     
     if not current_user.is_verified:
-        db.query(models.User).filter(models.User.id == current_user.id).update({"is_verified": True}, synchronize_session=False)
-        db.commit()
+        user_repository.update_user(current_user.id, {"is_verified": True})
 
     return RedirectResponse(url=f"http://localhost:8080/verified-account/{current_user.id}/{token}")
 
+@router.post('/password-recovering')
+def password_recovering(request: Request, pass_req: ForgetPasswordRequest):
+
+    user_repository = UserRepository()  
+    existing_user = user_repository.get_user_by_email(pass_req.email)
+    
+    if not existing_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid email address.")
+    
+    secret_token = oauth2.create_access_token(data = {"user_id": existing_user.id})
+    reset_password_link = f"http://localhost:8080/reset-password/{secret_token}"
+
+    context = {
+        "request": request,
+        "reset_password_link": reset_password_link
+    }
+    #Se envia email de recuperacion de contraseña
+    mailer.send_email(existing_user.email, "ConvocArte - Recuperación de contraseña", context, "password-recovering.html")
+
+    return {"message": "Email has been sent", "success": True,
+        "status_code": status.HTTP_200_OK}
+
+@router.post("/reset-password")
+def reset_password(rfp: ResetForgetPassword):
+    user_repository = UserRepository()
+    token_exception = HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Invalid Password Reset Payload or Reset Link Expired")
+    info = oauth2.verify_access_token(rfp.secret_token, token_exception)
+    
+    if info is None:
+        raise token_exception
+    
+    if rfp.new_password != rfp.password_confirmation:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Passwords must match.")
+    
+    hashed_password = utils.hash(rfp.new_password)
+    user_repository.update_user(info.id, {"password": hashed_password})
+
+    return {'success': True, 'status_code': status.HTTP_200_OK,
+                'message': 'Password Rest Successfull!'}
 
 @router.get("/", response_model=List[UserResponse])
 def list_users(db: Session = Depends(get_db), current_user: models.User = 
