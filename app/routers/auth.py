@@ -4,14 +4,14 @@ from starlette import status
 from starlette.responses import Response
 from sqlalchemy.orm import Session
 from database import get_db
-from schemas.user import Token
+from schemas.auth import UserLogin
 import models
 import utils
 import oauth2
 
 router = APIRouter(tags=['Authentication'])
 
-@router.post('/login', response_model=Token)
+@router.post('/login', response_model=UserLogin)
 def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     #Con oauth ahora espera el email y la pass en form-data
     user = db.query(models.User).filter(
@@ -26,5 +26,9 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
     
     access_token = oauth2.create_access_token(data = {"user_id": user.id})
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    profile_picture_path = ""
+    if user.profile_picture: 
+        profile_picture_path = "http://localhost/static/images/" + user.profile_picture
+
+    return {"id": user.id, "email": user.email, "fullname": user.fullname, "profile_picture": profile_picture_path, "token": access_token, "token_type": "bearer"}
 

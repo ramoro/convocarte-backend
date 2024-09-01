@@ -6,12 +6,20 @@ from starlette import status
 from starlette.responses import Response
 from typing import List, Optional
 from sqlalchemy.orm import Session
+from fastapi.responses import JSONResponse
+from fastapi import File, UploadFile
+import secrets
+from fastapi.staticfiles import StaticFiles
+from PIL import Image
 import models
 from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword
 from database import get_db
 import utils
 import oauth2
 import mailer
+import io
+import base64
+import os
 
 router = APIRouter(
     prefix="/users", #Indica que cada endpoint de este router va a comenzar con /users. Evita tener que pegarlo en todos lados
@@ -32,6 +40,7 @@ def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db
     #hash the password -> user.password
     hashed_password = utils.hash(user.password)
     user.password = hashed_password
+    user.fullname = user.fullname.title() #Pasamos a mayusculas la primera letra
     dict_user = user.model_dump()
     dict_user.pop("password_confirmation")
     new_user = user_repository.add_new_user(dict_user)
@@ -53,7 +62,8 @@ def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db
 def email_verification(token: str):
     user_repository = UserRepository()
     try:
-        current_user = oauth2.get_current_user(token, user_repository, True)
+        print(f"Token en verification: {token}")
+        current_user = oauth2.get_current_user(user_repository, token, True)
     except Exception as e:
         #Si el token es invalido, ya sea porque esta falseado o caduco, el usuario no se verifica
         return RedirectResponse(url=f"http://localhost:8080/verified-account/None/None")
@@ -104,6 +114,52 @@ def reset_password(rfp: ResetForgetPassword):
 
     return {'success': True, 'status_code': status.HTTP_200_OK,
                 'message': 'Password Rest Successfull!'}
+
+
+@router.post("/upload-profile-picture", )
+async def create_profile_picture(file: UploadFile = File(...),
+                                current_user: models.User = Depends(oauth2.get_current_user)):
+    FILEPATH = "./static/images/"
+    filename = file.filename
+    extension = filename.split(".")[-1].lower()
+
+    if extension not in ["png", "jpg", "jpeg"]:
+        raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="File extension not allowed.")
+    
+    #Genero numero random para el token, que seria le nombre de la imagen, para que no se pisen
+    token_name = secrets.token_hex(10) + "." + extension
+    generated_name = FILEPATH + token_name
+    file_content = await file.read()
+
+    # Eliminar la imagen de perfil anterior si existe
+    user_repository = UserRepository()
+    current_profile_picture = current_user.profile_picture
+
+    if current_profile_picture:
+        old_image_path = FILEPATH + current_profile_picture
+        if os.path.exists(old_image_path):
+            os.remove(old_image_path)
+
+    with open(generated_name, "wb") as file:
+        file.write(file_content)
+    
+    img = Image.open(generated_name)
+    #img = img.resize(size=(200, 200))
+    img.save(generated_name)
+
+    # Convertir la imagen a base64 para enviar al frontend. Pillow no acepta JPG
+    buffered = io.BytesIO()
+    img.save(buffered, format='JPEG' if extension == 'jpg' else extension.upper())
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+
+
+    user_repository.update_user(current_user.id, {"profile_picture": token_name})
+
+    file_url="http://localhost" + generated_name[1:]
+    return {'success': True, 'status_code': status.HTTP_200_OK,
+            'filename': file_url, 'image': img_str}
+
 
 @router.get("/", response_model=List[UserResponse])
 def list_users(db: Session = Depends(get_db), current_user: models.User = 

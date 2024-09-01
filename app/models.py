@@ -13,4 +13,5 @@ class User(Base):
     is_verified = Column(Boolean, nullable=False, server_default=text('false'))
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
+    profile_picture = Column(String)
     

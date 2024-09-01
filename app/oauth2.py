@@ -35,6 +35,7 @@ def verify_access_token(token: str, credentials_exception):
     """Recibe un token y una excepcion de credenciales. Valida que el token recibido
     sea valido, sino levanta la excepcion de credencial. Devuelve un scema del tipo TokenData."""
     try:
+
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) 
 
         id: str = payload.get("user_id")
@@ -57,9 +58,8 @@ def get_current_user(user_repository: UserRepository = Depends(UserRepository), 
                                           headers={"WWW-Authenticate": "Bearer"})
     
     token = verify_access_token(token, credentials_exception)
-
     user = user_repository.get_user_by_id(token.id)
-
+    
     #Unicamente no se valida que la cuenta esta verificada cuando se corre el endpoint para verificar la cuenta
     if not account_verification and not user.is_verified:
         raise credentials_exception
