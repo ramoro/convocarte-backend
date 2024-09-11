@@ -1,7 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from database import Base
 from sqlalchemy.sql.expression import text
-from sqlalchemy.sql.sqltypes import TIMESTAMP
+from sqlalchemy.sql.sqltypes import TIMESTAMP, Date
 
 class User(Base):
     __tablename__ = "users"
@@ -14,4 +14,17 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
     profile_picture = Column(String)
+
+class AcademicExperience(Base):
+    __tablename__ = "academic_experiences"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    institution = Column(String, nullable=False)
+    field_of_study = Column(String, nullable=False)
+    start_date = Column(Date, nullable=False) 
+    end_date = Column(Date) #Puede no haber fecha de fin, significa que todavia esta en esa institucion
+    description = Column(String)
+    created_at = Column(TIMESTAMP(timezone=True),
+                      nullable=False, server_default=text('now()'))
     

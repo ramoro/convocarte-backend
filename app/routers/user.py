@@ -2,6 +2,7 @@ from fastapi import HTTPException, Depends, APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from repository.user import UserRepository
+from repository.academic_experience import AcademicExperienceRepository
 from starlette import status
 from starlette.responses import Response
 from typing import List, Optional
@@ -13,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from PIL import Image
 import models
 from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword
+from schemas.academic_experience import AcademicExperienceBase, AcademicExperienceResponse
 from database import get_db
 import utils
 import oauth2
@@ -153,13 +155,52 @@ async def create_profile_picture(file: UploadFile = File(...),
     img.save(buffered, format='JPEG' if extension == 'jpg' else extension.upper())
     img_str = base64.b64encode(buffered.getvalue()).decode()
 
-
     user_repository.update_user(current_user.id, {"profile_picture": token_name})
 
     file_url="http://localhost" + generated_name[1:]
     return {'success': True, 'status_code': status.HTTP_200_OK,
             'filename': file_url, 'image': img_str}
 
+@router.post("/add-academic-experience", response_model=AcademicExperienceResponse)
+async def add_academic_experience(new_academic_experience: AcademicExperienceBase, 
+                                  current_user: models.User = Depends(oauth2.get_current_user)):
+    academic_exp_repository = AcademicExperienceRepository()
+    dict_academic_exp = new_academic_experience.model_dump()
+    dict_academic_exp['user_id'] = current_user.id
+    new_academic_exp = academic_exp_repository.add_new_academic_experience(dict_academic_exp)
+
+    return new_academic_exp
+
+@router.get("/my-academic-experiences", response_model=List[AcademicExperienceResponse])
+async def list_academic_experiences(current_user: models.User = Depends(oauth2.get_current_user)):
+    academic_exp_repository = AcademicExperienceRepository()
+    
+    my_academic_experiences = academic_exp_repository.get_academic_experiences_by_user_id(current_user.id)
+
+    return my_academic_experiences
+
+@router.delete("/delete-academic-experience/{academic_exp_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_academic_experience(academic_exp_id: int, current_user: models.User = 
+                Depends(oauth2.get_current_user)):
+    academic_exp_repository = AcademicExperienceRepository()
+
+    deleted = academic_exp_repository.delete_academic_experience(academic_exp_id)
+    
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Academic experience {academic_exp_id} not found")
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.put("/update-academic-experience/{academic_exp_id}", response_model=AcademicExperienceBase)
+def update_academic_experience(academic_exp_id: int, updated_academic_exp: AcademicExperienceBase, current_user: models.User = 
+                Depends(oauth2.get_current_user)):
+    academic_exp_repository = AcademicExperienceRepository()
+    updated_exp = academic_exp_repository.update_academic_experience(academic_exp_id, updated_academic_exp.model_dump())
+
+    if not updated_exp:
+        raise HTTPException(status_code=404, detail=f"Academic experience {academic_exp_id} not found")
+
+    return updated_exp
 
 @router.get("/", response_model=List[UserResponse])
 def list_users(db: Session = Depends(get_db), current_user: models.User = 

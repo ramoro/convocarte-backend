@@ -1,7 +1,5 @@
-from pydantic import BaseModel, EmailStr    
+from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from typing import Optional
-from models import User
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -50,4 +48,3 @@ class ResetForgetPassword(BaseModel):
     secret_token: str
     new_password: str
     password_confirmation: str
-
