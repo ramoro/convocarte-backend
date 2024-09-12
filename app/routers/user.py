@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from repository.user import UserRepository
 from repository.academic_experience import AcademicExperienceRepository
+from repository.work_experience import WorkExperienceRepository
 from starlette import status
 from starlette.responses import Response
 from typing import List, Optional
@@ -15,6 +16,7 @@ from PIL import Image
 import models
 from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword
 from schemas.academic_experience import AcademicExperienceBase, AcademicExperienceResponse
+from schemas.work_experience import WorkExperienceBase, WorkExperienceResponse
 from database import get_db
 import utils
 import oauth2
@@ -199,6 +201,47 @@ def update_academic_experience(academic_exp_id: int, updated_academic_exp: Acade
 
     if not updated_exp:
         raise HTTPException(status_code=404, detail=f"Academic experience {academic_exp_id} not found")
+
+    return updated_exp
+
+@router.post("/add-work-experience", response_model=WorkExperienceResponse)
+async def add_work_experience(new_work_experience: WorkExperienceBase, 
+                                  current_user: models.User = Depends(oauth2.get_current_user)):
+    work_exp_repository = WorkExperienceRepository()
+    dict_work_exp = new_work_experience.model_dump()
+    dict_work_exp['user_id'] = current_user.id
+    new_work_exp = work_exp_repository.add_new_work_experience(dict_work_exp)
+
+    return new_work_exp
+
+@router.get("/my-work-experiences", response_model=List[WorkExperienceResponse])
+async def list_work_experiences(current_user: models.User = Depends(oauth2.get_current_user)):
+    work_exp_repository = WorkExperienceRepository()
+    
+    my_work_experiences = work_exp_repository.get_work_experiences_by_user_id(current_user.id)
+
+    return my_work_experiences
+
+@router.delete("/delete-work-experience/{work_exp_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_work_experience(work_exp_id: int, current_user: models.User = 
+                Depends(oauth2.get_current_user)):
+    work_exp_repository = WorkExperienceRepository()
+
+    deleted = work_exp_repository.delete_work_experience(work_exp_id)
+    
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Work experience {work_exp_id} not found")
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.put("/update-work-experience/{work_exp_id}", response_model=WorkExperienceBase)
+def update_work_experience(work_exp_id: int, updated_work_exp: WorkExperienceBase, current_user: models.User = 
+                Depends(oauth2.get_current_user)):
+    work_exp_repository = WorkExperienceRepository()
+    updated_exp = work_exp_repository.update_work_experience(work_exp_id, updated_work_exp.model_dump())
+
+    if not updated_exp:
+        raise HTTPException(status_code=404, detail=f"Work experience {work_exp_id} not found")
 
     return updated_exp
 

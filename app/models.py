@@ -27,4 +27,18 @@ class AcademicExperience(Base):
     description = Column(String)
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
+class WorkExperience(Base):
+    __tablename__ = "work_experiences"
+
+    id = Column(Integer, primary_key=True, nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    workTitle = Column(String, nullable=False)
+    role = Column(String, nullable=False)
+    start_date = Column(Date, nullable=False) 
+    end_date = Column(Date) #Puede no haber fecha de fin, significa que todavia esta en ese trabajo
+    producer = Column(String)
+    projectUrl = Column(String)
+    description = Column(String)
+    created_at = Column(TIMESTAMP(timezone=True),
+                      nullable=False, server_default=text('now()'))
     
