@@ -59,7 +59,7 @@ def get_current_user(user_repository: UserRepository = Depends(UserRepository), 
     
     token = verify_access_token(token, credentials_exception)
     user = user_repository.get_user_by_id(token.id)
-    
+
     #Unicamente no se valida que la cuenta esta verificada cuando se corre el endpoint para verificar la cuenta
     if not account_verification and not user.is_verified:
         raise credentials_exception

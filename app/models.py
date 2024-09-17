@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Numeric
 from database import Base
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP, Date
@@ -14,6 +14,28 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
     profile_picture = Column(String)
+    weight = Column(Numeric(10, 2))
+    height = Column(Numeric(10, 2))
+    eyes_color = Column(String)
+    skin_color = Column(String)
+    waist_measurement = Column(Numeric(10, 2))
+    hip_measurement = Column(Numeric(10, 2))
+    bust_measurement = Column(Numeric(10, 2))
+    hair_color = Column(String) 
+    pant_size = Column(String) #Los talles pueden ser tanto strings (M/L/XL) como numeros (42/44/45)
+    tshirt_size = Column(String)
+    jacket_size = Column(String)
+    shoes_size = Column(String)
+    hands = Column(String)
+    feet = Column(String)
+    teeth = Column(String)
+    braces = Column(Boolean)
+    tattoos = Column(Boolean)
+    tattoosArea = Column(String)
+    piercings = Column(Boolean)
+    piercingsArea = Column(String)
+    physical_characs_extra_info = Column(String)
+
 
 class AcademicExperience(Base):
     __tablename__ = "academic_experiences"

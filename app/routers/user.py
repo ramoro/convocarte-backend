@@ -14,7 +14,7 @@ import secrets
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 import models
-from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword
+from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword, UserFullResponse
 from schemas.academic_experience import AcademicExperienceBase, AcademicExperienceResponse
 from schemas.work_experience import WorkExperienceBase, WorkExperienceResponse
 from database import get_db
@@ -255,6 +255,18 @@ def list_users(db: Session = Depends(get_db), current_user: models.User =
     #return {"data": all_users}
     return all_users
 
+@router.patch("/{user_id}")
+def update_user_partially(user_id: int, updated_data: UpdateUser, current_user: models.User = 
+                Depends(oauth2.get_current_user)):
+    user_respository = UserRepository()
+    updated_user = user_respository.update_user(user_id, updated_data.model_dump())
+
+    if not updated_user:
+        raise HTTPException(status_code=404, detail=f"User {updated_user} not found")
+
+    return updated_user
+
+
 @router.get("/filtered", response_model=List[UserResponse])
 def list_filtered_users(db: Session = Depends(get_db), current_user: models.User = 
                 Depends(oauth2.get_current_user), limit: int = 10, skip: int = 0,
@@ -268,18 +280,19 @@ def list_filtered_users(db: Session = Depends(get_db), current_user: models.User
     #return {"data": all_users}
     return all_users
 
-@router.get("/{user_id}", response_model=UserResponse)
+@router.get("/{user_id}")
 def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.User = 
                 Depends(oauth2.get_current_user)):
-
-    #cursor.execute("""SELECT * FROM users where users.id = %s""", (str(user_id)))
-    #user = cursor.fetchone() 
-    user = db.query(models.User).filter(models.User.id == user_id).first() #Se usa first y no all porque se sabe q por id es unico, sino seguiria buscando y gastaria mas tiempo
+    
+    user_repository = UserRepository()
+    user = user_repository.get_user_by_id(user_id)
+    user = db.query(models.User).filter(models.User.id == user_id).first()
     print(user)
     if not user:
         raise HTTPException(status_code=404, detail=f"User with {user_id} not found")
+    
     return user
-        
+       
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: int, db: Session = Depends(get_db), current_user: models.User = 

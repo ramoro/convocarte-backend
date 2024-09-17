@@ -15,7 +15,7 @@ class UserRepository:
         return self.db.query(models.User).filter((models.User.email == email)).first()
     
     def get_user_by_id(self, id):
-        return self.db.query(models.User).filter(models.User.id == id).first()
+        return self.db.query(models.User).filter(models.User.id == id).first() #Se usa first y no all porque se sabe q por id es unico, sino seguiria buscando y gastaria mas tiempo
     
     def add_new_user(self, dict_user):
         new_user = models.User(
@@ -28,6 +28,14 @@ class UserRepository:
 
         return new_user
     
-    def update_user(self, id, data):
-        self.db.query(models.User).filter(models.User.id == id).update(data, synchronize_session=False)
+    def update_user(self, user_id, updated_data):
+        print("update user")
+        user_query = self.db.query(models.User).filter(models.User.id == user_id)
+
+        if not user_query.first():
+            return None
+
+        user_query.update(updated_data, synchronize_session=False)
         self.db.commit()
+    
+        return user_query.first()
