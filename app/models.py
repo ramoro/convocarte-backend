@@ -14,6 +14,7 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
     profile_picture = Column(String)
+    #Caracteristicas fisicas
     weight = Column(Numeric(10, 2))
     height = Column(Numeric(10, 2))
     eyes_color = Column(String)
@@ -35,6 +36,17 @@ class User(Base):
     piercings = Column(Boolean)
     piercingsArea = Column(String)
     physical_characs_extra_info = Column(String)
+    #Habilidades
+    language_skills = Column(String)
+    sports_skills = Column(String)
+    instruments_skills = Column(String)
+    other_skills = Column(String)
+    is_singer = Column(Boolean)
+    is_dancer = Column(Boolean)
+    dance_types = Column(String)
+    car_drivers_license = Column(Boolean)
+    moto_drivers_license = Column(Boolean)
+    skills_additionals = Column(String)
 
 
 class AcademicExperience(Base):

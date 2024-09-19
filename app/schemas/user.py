@@ -32,6 +32,16 @@ class UserResponse(BaseModel):
         orm_mode = True
 
 class UserFullResponse(UserResponse):
+    language_skills: Optional[str]
+    sports_skills: Optional[str]
+    instruments_skills: Optional[str]
+    other_skills: Optional[str]
+    is_singer: Optional[bool]
+    is_dancer: Optional[bool]
+    dance_types: Optional[str]
+    car_drivers_license: Optional[bool]
+    moto_drivers_license: Optional[bool]
+    skills_additionals: Optional[str]
     weight: Optional[float]
     height: Optional[float]
     eyes_color: Optional[str]
@@ -55,27 +65,37 @@ class UserFullResponse(UserResponse):
     physical_characs_extra_info: Optional[str]
 
 class UpdateUser(BaseModel):
-    weight: Optional[float]
-    height: Optional[float]
-    eyes_color: Optional[str]
-    skin_color: Optional[str]
-    waist_measurement: Optional[float]
-    hip_measurement: Optional[float]
-    bust_measurement: Optional[float]
-    hair_color: Optional[str]
-    pant_size: Optional[float]
-    tshirt_size: Optional[float]
-    jacket_size: Optional[float]
-    shoes_size: Optional[float]
-    hands: Optional[str]
-    feet: Optional[str]
-    teeth: Optional[str]
-    braces: Optional[bool]
-    tattoos: Optional[bool]
-    tattoosArea: Optional[str]
-    piercings: Optional[bool]
-    piercingsArea: Optional[str]
-    physical_characs_extra_info: Optional[str]
+    language_skills: Optional[str] = None
+    sports_skills: Optional[str] = None
+    instruments_skills: Optional[str] = None
+    other_skills: Optional[str] = None
+    is_singer: Optional[bool] = None
+    is_dancer: Optional[bool] = None
+    dance_types: Optional[str] = None
+    car_drivers_license: Optional[bool] = None
+    moto_drivers_license: Optional[bool] = None
+    skills_additionals: Optional[str] = None
+    weight: Optional[float] = None
+    height: Optional[float] = None
+    eyes_color: Optional[str] = None
+    skin_color: Optional[str] = None
+    waist_measurement: Optional[float] = None
+    hip_measurement: Optional[float] = None
+    bust_measurement: Optional[float] = None
+    hair_color: Optional[str] = None
+    pant_size: Optional[float] = None
+    tshirt_size: Optional[float] = None
+    jacket_size: Optional[float] = None
+    shoes_size: Optional[float] = None
+    hands: Optional[str] = None 
+    feet: Optional[str] = None
+    teeth: Optional[str] = None
+    braces: Optional[bool] = None
+    tattoos: Optional[bool] = None
+    tattoosArea: Optional[str] = None
+    piercings: Optional[bool] = None
+    piercingsArea: Optional[str] = None 
+    physical_characs_extra_info: Optional[str] = None
 
 class Token(BaseModel):
     access_token:str
