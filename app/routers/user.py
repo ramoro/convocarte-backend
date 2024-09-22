@@ -14,9 +14,9 @@ import secrets
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 import models
-from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword
-from schemas.academic_experience import AcademicExperienceBase, AcademicExperienceResponse
-from schemas.work_experience import WorkExperienceBase, WorkExperienceResponse
+from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword ,UserFullResponse
+from schemas.academic_experience import AcademicExperienceBase, AcademicExperienceUpdate, AcademicExperienceResponse
+from schemas.work_experience import WorkExperienceBase, WorkExperienceResponse, WorkExperienceUpdate
 from database import get_db
 import utils
 import oauth2
@@ -194,7 +194,7 @@ def delete_academic_experience(academic_exp_id: int, current_user: models.User =
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.put("/update-academic-experience/{academic_exp_id}", response_model=AcademicExperienceBase)
-def update_academic_experience(academic_exp_id: int, updated_academic_exp: AcademicExperienceBase, current_user: models.User = 
+def update_academic_experience(academic_exp_id: int, updated_academic_exp: AcademicExperienceUpdate, current_user: models.User = 
                 Depends(oauth2.get_current_user)):
     academic_exp_repository = AcademicExperienceRepository()
     updated_exp = academic_exp_repository.update_academic_experience(academic_exp_id, updated_academic_exp.model_dump())
@@ -235,7 +235,7 @@ def delete_work_experience(work_exp_id: int, current_user: models.User =
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.put("/update-work-experience/{work_exp_id}", response_model=WorkExperienceBase)
-def update_work_experience(work_exp_id: int, updated_work_exp: WorkExperienceBase, current_user: models.User = 
+def update_work_experience(work_exp_id: int, updated_work_exp: WorkExperienceUpdate, current_user: models.User = 
                 Depends(oauth2.get_current_user)):
     work_exp_repository = WorkExperienceRepository()
     updated_exp = work_exp_repository.update_work_experience(work_exp_id, updated_work_exp.model_dump())
@@ -268,16 +268,28 @@ def list_filtered_users(db: Session = Depends(get_db), current_user: models.User
     #return {"data": all_users}
     return all_users
 
-@router.get("/{user_id}", response_model=UserResponse)
+@router.get("/{user_id}", response_model=UserFullResponse)
 def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.User = 
                 Depends(oauth2.get_current_user)):
-
     #cursor.execute("""SELECT * FROM users where users.id = %s""", (str(user_id)))
     #user = cursor.fetchone() 
-    user = db.query(models.User).filter(models.User.id == user_id).first() #Se usa first y no all porque se sabe q por id es unico, sino seguiria buscando y gastaria mas tiempo
-    print(user)
+    user_repository = UserRepository()
+    user = user_repository.get_user_by_id(user_id)
+
     if not user:
         raise HTTPException(status_code=404, detail=f"User with {user_id} not found")
+    return user
+
+@router.patch("/{user_id}")
+def update_user_partially(user_id: int, updated_data: UpdateUser, current_user: models.User = 
+                Depends(oauth2.get_current_user)):
+    user_respository = UserRepository()
+    user = user_respository.get_user_by_id(user_id)
+
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User {user} not found")
+    
+    user_respository.update_user(user_id, updated_data.model_dump())
     return user
         
 
@@ -300,27 +312,27 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: model
     return Response(status_code=status.HTTP_204_NO_CONTENT)
     
 
-@router.put("/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, updated_user: UpdateUser, db: Session = Depends(get_db), current_user: models.User = 
-                Depends(oauth2.get_current_user)):
-    #cursor.execute("""UPDATE users
-    #               set username = %s,
-    #               fullname = %s,
-    #               email = %s,
-    #               password = %s
-    #               where id = %s
-    #               returning *""", (user.username, user.fullname, user.email, user.password, user_id))
-    #updated_user = cursor.fetchone()
-    #conn.commit()
+# @router.put("/{user_id}", response_model=UserResponse)
+# def update_user(user_id: int, updated_user: UpdateUser, db: Session = Depends(get_db), current_user: models.User = 
+#                 Depends(oauth2.get_current_user)):
+#     #cursor.execute("""UPDATE users
+#     #               set username = %s,
+#     #               fullname = %s,
+#     #               email = %s,
+#     #               password = %s
+#     #               where id = %s
+#     #               returning *""", (user.username, user.fullname, user.email, user.password, user_id))
+#     #updated_user = cursor.fetchone()
+#     #conn.commit()
 
-    user_query = db.query(models.User).filter(models.User.id == user_id)
+#     user_query = db.query(models.User).filter(models.User.id == user_id)
 
-    user = user_query.first()
+#     user = user_query.first()
     
-    if user == None:
-        raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+#     if user == None:
+#         raise HTTPException(status_code=404, detail=f"User {user_id} not found")
     
-    user_query.update(updated_user.model_dump(), synchronize_session=False)
-    db.commit()
+#     user_query.update(updated_user.model_dump(), synchronize_session=False)
+#     db.commit()
 
-    return user_query.first()
+#     return user_query.first()

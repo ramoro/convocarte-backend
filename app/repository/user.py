@@ -15,7 +15,7 @@ class UserRepository:
         return self.db.query(models.User).filter((models.User.email == email)).first()
     
     def get_user_by_id(self, id):
-        return self.db.query(models.User).filter(models.User.id == id).first()
+        return self.db.query(models.User).filter(models.User.id == id).first() #Se usa first y no all porque se sabe q por id es unico, sino seguiria buscando y gastaria mas tiempo
     
     def add_new_user(self, dict_user):
         new_user = models.User(
