@@ -35,6 +35,16 @@ class User(Base):
     piercings = Column(Boolean)
     piercings_area = Column(String)
     physical_characs_extra_info = Column(String)
+    language_skills = Column(String)
+    sports_skills = Column(String)
+    instruments_skills = Column(String)
+    other_skills = Column(String)
+    is_singer = Column(Boolean)
+    is_dancer = Column(Boolean)
+    dance_types = Column(String)
+    car_drivers_license = Column(Boolean)
+    moto_drivers_license = Column(Boolean)
+    skills_additionals = Column(String)
 
 class AcademicExperience(Base):
     __tablename__ = "academic_experiences"

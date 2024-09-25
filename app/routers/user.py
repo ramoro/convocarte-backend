@@ -67,7 +67,7 @@ def email_verification(token: str, db: Session = Depends(get_db)):
     user_repository = UserRepository(db)
     try:
         print(f"Token en verification: {token}")
-        current_user = oauth2.get_current_user(user_repository, token, True)
+        current_user = oauth2.get_current_user(token, db, True)
     except Exception as e:
         #Si el token es invalido, ya sea porque esta falseado o caduco, el usuario no se verifica
         return RedirectResponse(url=f"http://localhost:8080/verified-account/None/None")
@@ -292,8 +292,10 @@ def update_user_partially(user_id: int, updated_data: UpdateUser, current_user: 
 
     if not user:
         raise HTTPException(status_code=404, detail=f"User {user} not found")
+
+    user_respository.update_user(user_id,  updated_data.model_dump(exclude_unset=True)) 
+    #exclude_unset es para remover los campos que el usuario no seteo, sino los toma como null y pisa datos
     
-    user_respository.update_user(user_id, updated_data.model_dump())
     return user
         
 

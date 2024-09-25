@@ -54,6 +54,16 @@ class UserFullResponse(UserResponse):
     piercings: Optional[bool]
     piercings_area: Optional[str]
     physical_characs_extra_info: Optional[str]
+    language_skills: Optional[str]
+    sports_skills: Optional[str]
+    instruments_skills: Optional[str]
+    other_skills: Optional[str]
+    is_singer: Optional[bool]
+    is_dancer: Optional[bool]
+    dance_types: Optional[str]
+    car_drivers_license: Optional[bool]
+    moto_drivers_license: Optional[bool]
+    skills_additionals: Optional[str]
 
 class UpdateUser(BaseModel):
     weight: Optional[float] = None
@@ -77,6 +87,16 @@ class UpdateUser(BaseModel):
     piercings: Optional[bool] = None
     piercings_area: Optional[str] = None 
     physical_characs_extra_info: Optional[str] = None
+    language_skills: Optional[str] = None
+    sports_skills: Optional[str] = None
+    instruments_skills: Optional[str] = None
+    other_skills: Optional[str] = None
+    is_singer: Optional[bool] = None
+    is_dancer: Optional[bool] = None
+    dance_types: Optional[str] = None
+    car_drivers_license: Optional[bool] = None
+    moto_drivers_license: Optional[bool] = None
+    skills_additionals: Optional[str] = None
 
 
 class Token(BaseModel):
