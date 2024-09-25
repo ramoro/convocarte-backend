@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 class AcademicExperienceRepository:
 
-    def __init__(self):
-        self.db: Session = next(get_db()) 
+    def __init__(self, db: Session):
+        self.db = db
     
     def add_new_academic_experience(self, dict_academic_exp):
         new_academic_exp = models.AcademicExperience(

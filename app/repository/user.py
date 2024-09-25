@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 class UserRepository:
 
-    def __init__(self):
-        self.db: Session = next(get_db()) 
+    def __init__(self, db: Session):
+        self.db = db
 
     def get_user_by_email(self, email):
         #cursor.execute("""INSERT INTO users (username, fullname, email, password) 

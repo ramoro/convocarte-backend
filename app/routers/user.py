@@ -32,7 +32,7 @@ router = APIRouter(
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db)):
-    user_repository = UserRepository()
+    user_repository = UserRepository(db)
     existing_user = user_repository.get_user_by_email(user.email)
 
     if existing_user:
@@ -63,8 +63,8 @@ def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db
     return new_user
 
 @router.get('/verification', response_model=UserResponse)
-def email_verification(token: str):
-    user_repository = UserRepository()
+def email_verification(token: str, db: Session = Depends(get_db)):
+    user_repository = UserRepository(db)
     try:
         print(f"Token en verification: {token}")
         current_user = oauth2.get_current_user(user_repository, token, True)
@@ -78,9 +78,9 @@ def email_verification(token: str):
     return RedirectResponse(url=f"http://localhost:8080/verified-account/{current_user.id}/{token}")
 
 @router.post('/password-recovering')
-def password_recovering(request: Request, pass_req: ForgetPasswordRequest):
+def password_recovering(request: Request, pass_req: ForgetPasswordRequest, db: Session = Depends(get_db)):
 
-    user_repository = UserRepository()  
+    user_repository = UserRepository(db)  
     existing_user = user_repository.get_user_by_email(pass_req.email)
     
     if not existing_user:
@@ -100,8 +100,8 @@ def password_recovering(request: Request, pass_req: ForgetPasswordRequest):
         "status_code": status.HTTP_200_OK}
 
 @router.post("/reset-password")
-def reset_password(rfp: ResetForgetPassword):
-    user_repository = UserRepository()
+def reset_password(rfp: ResetForgetPassword, db: Session = Depends(get_db)):
+    user_repository = UserRepository(db)
     token_exception = HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Invalid Password Reset Payload or Reset Link Expired")
     info = oauth2.verify_access_token(rfp.secret_token, token_exception)
@@ -122,7 +122,8 @@ def reset_password(rfp: ResetForgetPassword):
 
 @router.post("/upload-profile-picture", )
 async def create_profile_picture(file: UploadFile = File(...),
-                                current_user: models.User = Depends(oauth2.get_current_user)):
+                                current_user: models.User = Depends(oauth2.get_current_user),
+                                db: Session = Depends(get_db)):
     FILEPATH = "./static/images/"
     filename = file.filename
     extension = filename.split(".")[-1].lower()
@@ -137,7 +138,7 @@ async def create_profile_picture(file: UploadFile = File(...),
     file_content = await file.read()
 
     # Eliminar la imagen de perfil anterior si existe
-    user_repository = UserRepository()
+    user_repository = UserRepository(db)
     current_profile_picture = current_user.profile_picture
 
     if current_profile_picture:
@@ -165,8 +166,9 @@ async def create_profile_picture(file: UploadFile = File(...),
 
 @router.post("/add-academic-experience", response_model=AcademicExperienceResponse)
 async def add_academic_experience(new_academic_experience: AcademicExperienceBase, 
-                                  current_user: models.User = Depends(oauth2.get_current_user)):
-    academic_exp_repository = AcademicExperienceRepository()
+                                  current_user: models.User = Depends(oauth2.get_current_user),
+                                  db: Session = Depends(get_db)):
+    academic_exp_repository = AcademicExperienceRepository(db)
     dict_academic_exp = new_academic_experience.model_dump()
     dict_academic_exp['user_id'] = current_user.id
     new_academic_exp = academic_exp_repository.add_new_academic_experience(dict_academic_exp)
@@ -174,8 +176,9 @@ async def add_academic_experience(new_academic_experience: AcademicExperienceBas
     return new_academic_exp
 
 @router.get("/my-academic-experiences", response_model=List[AcademicExperienceResponse])
-async def list_academic_experiences(current_user: models.User = Depends(oauth2.get_current_user)):
-    academic_exp_repository = AcademicExperienceRepository()
+async def list_academic_experiences(current_user: models.User = Depends(oauth2.get_current_user),
+                                    db: Session = Depends(get_db)):
+    academic_exp_repository = AcademicExperienceRepository(db)
     
     my_academic_experiences = academic_exp_repository.get_academic_experiences_by_user_id(current_user.id)
 
@@ -183,8 +186,8 @@ async def list_academic_experiences(current_user: models.User = Depends(oauth2.g
 
 @router.delete("/delete-academic-experience/{academic_exp_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_academic_experience(academic_exp_id: int, current_user: models.User = 
-                Depends(oauth2.get_current_user)):
-    academic_exp_repository = AcademicExperienceRepository()
+                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    academic_exp_repository = AcademicExperienceRepository(db)
 
     deleted = academic_exp_repository.delete_academic_experience(academic_exp_id)
     
@@ -195,8 +198,8 @@ def delete_academic_experience(academic_exp_id: int, current_user: models.User =
 
 @router.put("/update-academic-experience/{academic_exp_id}", response_model=AcademicExperienceBase)
 def update_academic_experience(academic_exp_id: int, updated_academic_exp: AcademicExperienceUpdate, current_user: models.User = 
-                Depends(oauth2.get_current_user)):
-    academic_exp_repository = AcademicExperienceRepository()
+                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    academic_exp_repository = AcademicExperienceRepository(db)
     updated_exp = academic_exp_repository.update_academic_experience(academic_exp_id, updated_academic_exp.model_dump())
 
     if not updated_exp:
@@ -206,8 +209,9 @@ def update_academic_experience(academic_exp_id: int, updated_academic_exp: Acade
 
 @router.post("/add-work-experience", response_model=WorkExperienceResponse)
 async def add_work_experience(new_work_experience: WorkExperienceBase, 
-                                  current_user: models.User = Depends(oauth2.get_current_user)):
-    work_exp_repository = WorkExperienceRepository()
+                                  current_user: models.User = Depends(oauth2.get_current_user),
+                                  db: Session = Depends(get_db)):
+    work_exp_repository = WorkExperienceRepository(db)
     dict_work_exp = new_work_experience.model_dump()
     dict_work_exp['user_id'] = current_user.id
     new_work_exp = work_exp_repository.add_new_work_experience(dict_work_exp)
@@ -215,8 +219,8 @@ async def add_work_experience(new_work_experience: WorkExperienceBase,
     return new_work_exp
 
 @router.get("/my-work-experiences", response_model=List[WorkExperienceResponse])
-async def list_work_experiences(current_user: models.User = Depends(oauth2.get_current_user)):
-    work_exp_repository = WorkExperienceRepository()
+async def list_work_experiences(current_user: models.User = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    work_exp_repository = WorkExperienceRepository(db)
     
     my_work_experiences = work_exp_repository.get_work_experiences_by_user_id(current_user.id)
 
@@ -224,8 +228,8 @@ async def list_work_experiences(current_user: models.User = Depends(oauth2.get_c
 
 @router.delete("/delete-work-experience/{work_exp_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_work_experience(work_exp_id: int, current_user: models.User = 
-                Depends(oauth2.get_current_user)):
-    work_exp_repository = WorkExperienceRepository()
+                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    work_exp_repository = WorkExperienceRepository(db)
 
     deleted = work_exp_repository.delete_work_experience(work_exp_id)
     
@@ -236,8 +240,8 @@ def delete_work_experience(work_exp_id: int, current_user: models.User =
 
 @router.put("/update-work-experience/{work_exp_id}", response_model=WorkExperienceBase)
 def update_work_experience(work_exp_id: int, updated_work_exp: WorkExperienceUpdate, current_user: models.User = 
-                Depends(oauth2.get_current_user)):
-    work_exp_repository = WorkExperienceRepository()
+                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    work_exp_repository = WorkExperienceRepository(db)
     updated_exp = work_exp_repository.update_work_experience(work_exp_id, updated_work_exp.model_dump())
 
     if not updated_exp:
@@ -273,7 +277,7 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.U
                 Depends(oauth2.get_current_user)):
     #cursor.execute("""SELECT * FROM users where users.id = %s""", (str(user_id)))
     #user = cursor.fetchone() 
-    user_repository = UserRepository()
+    user_repository = UserRepository(db)
     user = user_repository.get_user_by_id(user_id)
 
     if not user:
@@ -282,8 +286,8 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.U
 
 @router.patch("/{user_id}")
 def update_user_partially(user_id: int, updated_data: UpdateUser, current_user: models.User = 
-                Depends(oauth2.get_current_user)):
-    user_respository = UserRepository()
+                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    user_respository = UserRepository(db)
     user = user_respository.get_user_by_id(user_id)
 
     if not user:

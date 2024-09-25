@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 class WorkExperienceRepository:
 
-    def __init__(self):
-        self.db: Session = next(get_db()) 
+    def __init__(self, db: Session):
+        self.db = db
     
     def add_new_work_experience(self, dict_work_exp):
         new_work_exp = models.WorkExperience(
