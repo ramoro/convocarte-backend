@@ -1,5 +1,4 @@
 import models
-from database import get_db
 from sqlalchemy.orm import Session
 
 class AcademicExperienceRepository:

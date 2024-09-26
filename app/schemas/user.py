@@ -1,7 +1,7 @@
-from pydantic import BaseModel, EmailStr
-from datetime import datetime
-from typing import Optional
-
+from pydantic import BaseModel, EmailStr, field_validator
+from datetime import datetime, date
+from typing import Optional, Union
+from dateutil import parser
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -33,6 +33,19 @@ class UserResponse(BaseModel):
         orm_mode = True
 
 class UserFullResponse(UserResponse):
+    age: Optional[int]
+    gender: Optional[str]
+    residence_country: Optional[str]
+    locality: Optional[str]
+    nationality: Optional[str]
+    birth_date:Optional[Union[date, str]]
+    phone_number: Optional[str]
+    phone_number_two: Optional[str]
+    instagram: Optional[str]
+    facebook: Optional[str]
+    youtube_channel: Optional[str]
+    website: Optional[str]
+
     weight: Optional[float]
     height: Optional[float]
     eyes_color: Optional[str]
@@ -54,6 +67,7 @@ class UserFullResponse(UserResponse):
     piercings: Optional[bool]
     piercings_area: Optional[str]
     physical_characs_extra_info: Optional[str]
+
     language_skills: Optional[str]
     sports_skills: Optional[str]
     instruments_skills: Optional[str]
@@ -66,6 +80,20 @@ class UserFullResponse(UserResponse):
     skills_additionals: Optional[str]
 
 class UpdateUser(BaseModel):
+    fullname: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    residence_country: Optional[str] = None
+    locality: Optional[str] = None
+    nationality: Optional[str] = None
+    birth_date:Optional[Union[date, str]] = None
+    phone_number: Optional[str] = None
+    phone_number_two: Optional[str] = None
+    instagram: Optional[str] = None
+    facebook: Optional[str] = None
+    youtube_channel: Optional[str] = None
+    website: Optional[str] = None
+
     weight: Optional[float] = None
     height: Optional[float] = None
     eyes_color: Optional[str] = None
@@ -87,6 +115,7 @@ class UpdateUser(BaseModel):
     piercings: Optional[bool] = None
     piercings_area: Optional[str] = None 
     physical_characs_extra_info: Optional[str] = None
+
     language_skills: Optional[str] = None
     sports_skills: Optional[str] = None
     instruments_skills: Optional[str] = None
@@ -97,6 +126,15 @@ class UpdateUser(BaseModel):
     car_drivers_license: Optional[bool] = None
     moto_drivers_license: Optional[bool] = None
     skills_additionals: Optional[str] = None
+
+    @field_validator('birth_date', mode='before')
+    def parse_start_date(cls, v):
+        if isinstance(v, str):
+            try:
+                return parser.parse(v).date()
+            except ValueError:
+                raise ValueError(f'Invalid date format for start_date: {v}')
+        return v
 
 
 class Token(BaseModel):

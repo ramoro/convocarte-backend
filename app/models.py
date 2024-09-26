@@ -14,6 +14,22 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
     profile_picture = Column(String)
+ 
+    # Info basica, contacto y redes
+    age = Column(Integer)
+    gender = Column(String)
+    residence_country = Column(String)
+    locality = Column(String)
+    nationality = Column(String)
+    birth_date = Column(Date)
+    phone_number = Column(String)
+    phone_number_two = Column(String)
+    instagram = Column(String)
+    facebook = Column(String)
+    youtube_channel = Column(String)
+    website = Column(String)
+
+    # Caracteristicas fisicas
     weight = Column(Numeric(10, 2))
     height = Column(Numeric(10, 2))
     eyes_color = Column(String)
@@ -35,6 +51,8 @@ class User(Base):
     piercings = Column(Boolean)
     piercings_area = Column(String)
     physical_characs_extra_info = Column(String)
+
+    #Habilidades
     language_skills = Column(String)
     sports_skills = Column(String)
     instruments_skills = Column(String)
