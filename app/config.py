@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     smtp_server_username: str
     smtp_server_password: str
     noreply_email: str
+    profile_pictures_path: str
+    cvs_path: str
     
     class Config:
         env_file = "../.env"

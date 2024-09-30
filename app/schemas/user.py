@@ -33,6 +33,7 @@ class UserResponse(BaseModel):
         orm_mode = True
 
 class UserFullResponse(UserResponse):
+    cv: Optional[str]
     age: Optional[int]
     gender: Optional[str]
     residence_country: Optional[str]
@@ -80,6 +81,8 @@ class UserFullResponse(UserResponse):
     skills_additionals: Optional[str]
 
 class UpdateUser(BaseModel):
+    cv: Optional[str] = None
+    
     fullname: Optional[str] = None
     age: Optional[int] = None
     gender: Optional[str] = None

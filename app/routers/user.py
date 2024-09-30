@@ -4,26 +4,25 @@ from fastapi.templating import Jinja2Templates
 from repository.user import UserRepository
 from repository.academic_experience import AcademicExperienceRepository
 from repository.work_experience import WorkExperienceRepository
+from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword ,UserFullResponse
+from schemas.academic_experience import AcademicExperienceBase, AcademicExperienceUpdate, AcademicExperienceResponse
+from schemas.work_experience import WorkExperienceBase, WorkExperienceResponse, WorkExperienceUpdate
+from database import get_db
 from starlette import status
 from starlette.responses import Response
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse
 from fastapi import File, UploadFile
-import secrets
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
+from config import settings
 import models
-from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword ,UserFullResponse
-from schemas.academic_experience import AcademicExperienceBase, AcademicExperienceUpdate, AcademicExperienceResponse
-from schemas.work_experience import WorkExperienceBase, WorkExperienceResponse, WorkExperienceUpdate
-from database import get_db
 import utils
 import oauth2
 import mailer
 import io
 import base64
-import os
 
 router = APIRouter(
     prefix="/users", #Indica que cada endpoint de este router va a comenzar con /users. Evita tener que pegarlo en todos lados
@@ -124,7 +123,7 @@ def reset_password(rfp: ResetForgetPassword, db: Session = Depends(get_db)):
 async def create_profile_picture(file: UploadFile = File(...),
                                 current_user: models.User = Depends(oauth2.get_current_user),
                                 db: Session = Depends(get_db)):
-    FILEPATH = "./static/images/"
+    filepath = settings.profile_pictures_path
     filename = file.filename
     extension = filename.split(".")[-1].lower()
 
@@ -132,22 +131,8 @@ async def create_profile_picture(file: UploadFile = File(...),
         raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="File extension not allowed.")
     
-    #Genero numero random para el token, que seria le nombre de la imagen, para que no se pisen
-    token_name = secrets.token_hex(10) + "." + extension
-    generated_name = FILEPATH + token_name
-    file_content = await file.read()
-
-    # Eliminar la imagen de perfil anterior si existe
-    user_repository = UserRepository(db)
-    current_profile_picture = current_user.profile_picture
-
-    if current_profile_picture:
-        old_image_path = FILEPATH + current_profile_picture
-        if os.path.exists(old_image_path):
-            os.remove(old_image_path)
-
-    with open(generated_name, "wb") as file:
-        file.write(file_content)
+    token_name = await utils.store_file(extension, filepath, file, current_user.profile_picture)
+    generated_name = filepath + token_name
     
     img = Image.open(generated_name)
     #img = img.resize(size=(200, 200))
@@ -158,11 +143,34 @@ async def create_profile_picture(file: UploadFile = File(...),
     img.save(buffered, format='JPEG' if extension == 'jpg' else extension.upper())
     img_str = base64.b64encode(buffered.getvalue()).decode()
 
+    user_repository = UserRepository(db)
     user_repository.update_user(current_user.id, {"profile_picture": token_name})
 
     file_url="http://localhost" + generated_name[1:]
     return {'success': True, 'status_code': status.HTTP_200_OK,
             'filename': file_url, 'image': img_str}
+
+@router.post("/upload-cv", )
+async def update_cv(file: UploadFile = File(...),
+                                current_user: models.User = Depends(oauth2.get_current_user),
+                                db: Session = Depends(get_db)):
+    filepath = settings.cvs_path
+    filename = file.filename
+    extension = filename.split(".")[-1].lower()
+
+    if extension not in ["pdf"]:
+        raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="File extension not allowed.")
+    
+    token_name = await utils.store_file(extension, filepath, file, current_user.cv)
+    generated_name = filepath + token_name
+    
+    user_repository = UserRepository(db)
+    user_repository.update_user(current_user.id, {"cv": token_name})
+
+    file_url="http://localhost" + generated_name[1:]
+    return {'success': True, 'status_code': status.HTTP_200_OK,
+            'filename': file_url}
 
 @router.post("/add-academic-experience", response_model=AcademicExperienceResponse)
 async def add_academic_experience(new_academic_experience: AcademicExperienceBase, 
@@ -282,6 +290,9 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.U
 
     if not user:
         raise HTTPException(status_code=404, detail=f"User with {user_id} not found")
+    
+    user.cv = "http://localhost" + settings.cvs_path[1:] + user.cv
+
     return user
 
 @router.patch("/{user_id}")

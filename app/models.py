@@ -14,6 +14,7 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
     profile_picture = Column(String)
+    cv = Column(String)
  
     # Info basica, contacto y redes
     age = Column(Integer)

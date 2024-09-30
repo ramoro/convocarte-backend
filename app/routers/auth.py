@@ -8,6 +8,7 @@ from schemas.auth import UserLogin
 import models
 import utils
 import oauth2
+from config import settings
 
 router = APIRouter(tags=['Authentication'])
 
@@ -28,7 +29,7 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
 
     profile_picture_path = ""
     if user.profile_picture: 
-        profile_picture_path = "http://localhost/static/images/" + user.profile_picture
+        profile_picture_path = "http://localhost" + settings.profile_pictures_path[1:] + user.profile_picture
 
     return {"id": user.id, "email": user.email, "fullname": user.fullname, "profile_picture": profile_picture_path, "token": access_token, "token_type": "bearer"}
 
