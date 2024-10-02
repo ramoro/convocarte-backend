@@ -291,7 +291,8 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.U
     if not user:
         raise HTTPException(status_code=404, detail=f"User with {user_id} not found")
     
-    user.cv = "http://localhost" + settings.cvs_path[1:] + user.cv
+    if user.cv: 
+        user.cv = "http://localhost" + settings.cvs_path[1:] + user.cv
 
     return user
 

@@ -15,6 +15,7 @@ class User(Base):
                       nullable=False, server_default=text('now()'))
     profile_picture = Column(String)
     cv = Column(String)
+    reel_link = Column(String)
  
     # Info basica, contacto y redes
     age = Column(Integer)
