@@ -35,6 +35,13 @@ class UserResponse(BaseModel):
 class UserFullResponse(UserResponse):
     cv: Optional[str]
     reel_link: Optional[str]
+
+    chest_up_shot: Optional[str]
+    full_body_shot: Optional[str]
+    profile_shot: Optional[str]
+    additional_shot_1: Optional[str]
+    additional_shot_2: Optional[str]
+
     age: Optional[int]
     gender: Optional[str]
     residence_country: Optional[str]
@@ -84,6 +91,12 @@ class UserFullResponse(UserResponse):
 class UpdateUser(BaseModel):
     cv: Optional[str] = None
     reel_link: Optional[str] = None
+
+    chest_up_shot: Optional[str] = None
+    full_body_shot: Optional[str] = None
+    profile_shot: Optional[str] = None
+    additional_shot_1: Optional[str] = None
+    additional_shot_2: Optional[str] = None
 
     fullname: Optional[str] = None
     age: Optional[int] = None
@@ -156,3 +169,7 @@ class ResetForgetPassword(BaseModel):
     secret_token: str
     new_password: str
     password_confirmation: str
+
+class DeleteUserFile(BaseModel):
+    field_name: str
+    file_name: str

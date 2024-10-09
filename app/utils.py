@@ -2,6 +2,8 @@ from passlib.context import CryptContext
 import re
 import secrets
 import os
+from PIL import Image
+import io
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -21,14 +23,48 @@ def verify(plain_password, hashed_password):
     False en caso contrario."""
     return pwd_context.verify(plain_password, hashed_password) #Usar la plain password para hashearla y compararla con la password hasheada obtenida de la bdd
 
-async def store_file(extension, filepath, new_file, existing_file):
+async def resize_image(file_content: bytes, max_width, max_height) -> bytes:
+    """Recibe el contenido de un archivo y lo redimensiona usando los parametros de ancho y altura
+    recibidos. Devuelve el contenido redimensionado"""
+
+    # Leer el contenido del archivo como una imagen de Pillow
+    image = Image.open(io.BytesIO(file_content))
+
+    # Obtener las dimensiones originales de la imagen
+    original_width, original_height = image.size
+
+    # Calcular el factor de escala proporcional
+    width_ratio = max_width / original_width
+    height_ratio = max_height / original_height
+    scale_ratio = min(width_ratio, height_ratio)
+
+    # Calcular el nuevo tamaño manteniendo las proporciones
+    new_width = int(original_width * scale_ratio)
+    new_height = int(original_height * scale_ratio)
+
+    # Redimensionar la imagen
+    resized_image = image.resize((new_width, new_height), Image.LANCZOS)
+
+    # Guardar la imagen redimensionada en un buffer de bytes
+    output_buffer = io.BytesIO()
+    resized_image.save(output_buffer, format=image.format)
+    resized_content = output_buffer.getvalue()
+
+    return resized_content
+
+async def store_file(extension, filepath, new_file, existing_file, resize, max_width_resize=0, max_height_resize=0):
     """Recibe la extension de un archivo, el path donde deberia ser almacenado, el contenido del archivo
-    a almacenar y el archivo ya existente a ser reemplazado. Genera un nombre en hexadecimal para el archivo
+    a almacenar, el archivo ya existente a ser reemplazado y un booleano que indica si la imagen debe ser redimensionada
+    al almacenarse, junto con los valores de redimension. Genera un nombre en hexadecimal para el archivo
     nuevo y lo almacena en el path indicado reemplazando el ya existente. Devuelve el nombre en hexadecimal generado."""
     #Genero numero random para el token, que seria le nombre de la imagen, para que no se pisen
     token_name = secrets.token_hex(10) + "." + extension
     generated_name = filepath + token_name
     file_content = await new_file.read()
+
+    #Hay imagenes como las de la galeria que se redimensionan porque pueden llegar a pesar mucho sino
+    if resize:
+        file_content = await resize_image(file_content, max_width_resize, max_height_resize)
 
     # Eliminar la imagen de perfil anterior si existe
     current_profile_picture = existing_file
@@ -42,3 +78,14 @@ async def store_file(extension, filepath, new_file, existing_file):
         file.write(file_content)
 
     return token_name
+
+async def delete_file(filepath, filename):
+    """Elimina un archivo en base al path y nombre del archivo recibidos por parametro.
+      Devuelve true si lo pudo eliminar, false en caso contrario."""
+    file_to_delete = os.path.join(filepath, filename)
+    print(file_to_delete)
+    if os.path.exists(file_to_delete):
+        os.remove(file_to_delete)
+        return True
+    else:
+        return False

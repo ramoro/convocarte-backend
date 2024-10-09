@@ -16,6 +16,13 @@ class User(Base):
     profile_picture = Column(String)
     cv = Column(String)
     reel_link = Column(String)
+
+    #Fotos del usuario
+    chest_up_shot = Column(String) #foto plano pecho
+    full_body_shot = Column(String) #foto plano entero
+    profile_shot = Column(String) #foto perfil
+    additional_shot_1 = Column(String)
+    additional_shot_2 = Column(String)
  
     # Info basica, contacto y redes
     age = Column(Integer)

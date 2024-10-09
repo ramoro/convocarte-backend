@@ -1,10 +1,10 @@
-from fastapi import HTTPException, Depends, APIRouter, Request
+from fastapi import HTTPException, Depends, APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from repository.user import UserRepository
 from repository.academic_experience import AcademicExperienceRepository
 from repository.work_experience import WorkExperienceRepository
-from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword ,UserFullResponse
+from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword ,UserFullResponse, DeleteUserFile
 from schemas.academic_experience import AcademicExperienceBase, AcademicExperienceUpdate, AcademicExperienceResponse
 from schemas.work_experience import WorkExperienceBase, WorkExperienceResponse, WorkExperienceUpdate
 from database import get_db
@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse
 from fastapi import File, UploadFile
 from fastapi.staticfiles import StaticFiles
+from typing import Optional
 from PIL import Image
 from config import settings
 import models
@@ -29,6 +30,14 @@ router = APIRouter(
     tags=["Users"] #Crea grupo para endpoints de users en la doc de FastApi
 )
 
+# Atributos del modelo Usuario que llevan un string con la direccion de una imagen de la galeria del usuario
+# Los atributos son: foto plano pecho, foto de plano general, foto de perfil y dos fotos adicionales
+USER_SHOTS_ATTRIBUTES = ["chest_up_shot", "full_body_shot", "profile_shot", "additional_shot_1", "additional_shot_2"]
+def add_complete_url_shots(user):
+    for attribute in USER_SHOTS_ATTRIBUTES:
+        if getattr(user, attribute):
+            setattr(user, attribute, "http://localhost" + settings.gallery_shots_path[1:] + getattr(user, attribute))
+    
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db)):
     user_repository = UserRepository(db)
@@ -131,7 +140,7 @@ async def create_profile_picture(file: UploadFile = File(...),
         raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="File extension not allowed.")
     
-    token_name = await utils.store_file(extension, filepath, file, current_user.profile_picture)
+    token_name = await utils.store_file(extension, filepath, file, current_user.profile_picture, False)
     generated_name = filepath + token_name
     
     img = Image.open(generated_name)
@@ -150,6 +159,63 @@ async def create_profile_picture(file: UploadFile = File(...),
     return {'success': True, 'status_code': status.HTTP_200_OK,
             'filename': file_url, 'image': img_str}
 
+@router.patch("/upload-gallery-shot", )
+async def create_gallery_shot(file: UploadFile = File(...),
+                            field_name: str = Form(...),
+                            old_file_name: Optional[str] = Form(None), 
+                            current_user: models.User = Depends(oauth2.get_current_user),
+                            db: Session = Depends(get_db)):
+    
+    filepath = settings.gallery_shots_path
+    print(old_file_name)
+    #En caso de que ya había un archivo antes se recibe su nombre para eliminarlo del back
+    if old_file_name != "null":
+        if not await utils.delete_file(settings.gallery_shots_path, old_file_name):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid old file name.")
+    
+    filename = file.filename
+    extension = filename.split(".")[-1].lower()
+
+    if extension not in ["png", "jpg", "jpeg"]:
+        raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="File extension not allowed.")
+    
+    token_name = await utils.store_file(extension, filepath, file, current_user.profile_picture, True, 600, 650)
+    generated_name = filepath + token_name
+    
+    img = Image.open(generated_name)
+    #img = img.resize(size=(200, 200))
+    img.save(generated_name)
+
+    # Convertir la imagen a base64 para enviar al frontend. Pillow no acepta JPG
+    buffered = io.BytesIO()
+    img.save(buffered, format='JPEG' if extension == 'jpg' else extension.upper())
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+
+    user_repository = UserRepository(db)
+    user_repository.update_user(current_user.id, {field_name: token_name})
+
+    file_url="http://localhost" + generated_name[1:]
+    return {'success': True, 'status_code': status.HTTP_200_OK,
+            'filename': file_url, 'image': img_str}
+
+#TODO: TERMINAR EDNPOINT DE DELETE GALLERY SHOT, HACER DELETE CV, UNIFICAR LOS DE SUBIR IMAGENES. 
+# ACHICAR IMAGENES EN EL DE ARRIBA, UN POCO, QUE ENTREN EN EL CARRU
+#MODIFICAR EDNPOINT PARA Q CUANDO ACTUALIZAS UNA FOTO POR OTRA, LA ANTERIOR DE ELIMINE DEL BACK, DEBE PERMITIR EL ENDPOINT MANDAR LA ANTERIOR
+# esto es-> en los upload de fotos o cv, mandar tmb el anterior archivo si es q hay, y eliminarlo
+#cambiar los posts de upload-cv por patch
+@router.patch("/delete-file", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user_file(file_data: DeleteUserFile, current_user: models.User = Depends(oauth2.get_current_user),
+                                db: Session = Depends(get_db)):
+    
+    if not await utils.delete_file(settings.gallery_shots_path, file_data.file_name):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid file.")
+
+    user_repository = UserRepository(db)
+    user_repository.update_user(current_user.id, {file_data.field_name: None})
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 @router.post("/upload-cv", )
 async def update_cv(file: UploadFile = File(...),
                                 current_user: models.User = Depends(oauth2.get_current_user),
@@ -162,7 +228,7 @@ async def update_cv(file: UploadFile = File(...),
         raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="File extension not allowed.")
     
-    token_name = await utils.store_file(extension, filepath, file, current_user.cv)
+    token_name = await utils.store_file(extension, filepath, file, current_user.cv, False)
     generated_name = filepath + token_name
     
     user_repository = UserRepository(db)
@@ -293,6 +359,8 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.U
     
     if user.cv: 
         user.cv = "http://localhost" + settings.cvs_path[1:] + user.cv
+    
+    add_complete_url_shots(user)
 
     return user
 
