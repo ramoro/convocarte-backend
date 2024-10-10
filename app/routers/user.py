@@ -225,9 +225,17 @@ async def delete_user_file(file_data: DeleteUserFile, current_user: models.User 
 
 @router.patch("/upload-cv", )
 async def update_cv(file: UploadFile = File(...),
-                                current_user: models.User = Depends(oauth2.get_current_user),
-                                db: Session = Depends(get_db)):
+                    old_file_name: Optional[str] = Form(None), 
+                    current_user: models.User = Depends(oauth2.get_current_user),
+                    db: Session = Depends(get_db)):
+    
     filepath = settings.cvs_path
+
+     #En caso de que ya había un archivo antes se recibe su nombre para eliminarlo del back
+    if old_file_name != "null":
+        if not await utils.delete_file(filepath, old_file_name):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid old file name.")
+
     filename = file.filename
     extension = filename.split(".")[-1].lower()
 
