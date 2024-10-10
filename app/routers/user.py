@@ -85,7 +85,7 @@ def email_verification(token: str, db: Session = Depends(get_db)):
 
     return RedirectResponse(url=f"http://localhost:8080/verified-account/{current_user.id}/{token}")
 
-@router.post('/password-recovering')
+@router.patch('/password-recovering')
 def password_recovering(request: Request, pass_req: ForgetPasswordRequest, db: Session = Depends(get_db)):
 
     user_repository = UserRepository(db)  
@@ -107,7 +107,7 @@ def password_recovering(request: Request, pass_req: ForgetPasswordRequest, db: S
     return {"message": "Email has been sent", "success": True,
         "status_code": status.HTTP_200_OK}
 
-@router.post("/reset-password")
+@router.patch("/reset-password")
 def reset_password(rfp: ResetForgetPassword, db: Session = Depends(get_db)):
     user_repository = UserRepository(db)
     token_exception = HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -128,7 +128,7 @@ def reset_password(rfp: ResetForgetPassword, db: Session = Depends(get_db)):
                 'message': 'Password Rest Successfull!'}
 
 
-@router.post("/upload-profile-picture", )
+@router.patch("/upload-profile-picture", )
 async def create_profile_picture(file: UploadFile = File(...),
                                 current_user: models.User = Depends(oauth2.get_current_user),
                                 db: Session = Depends(get_db)):
@@ -207,8 +207,15 @@ async def create_gallery_shot(file: UploadFile = File(...),
 @router.patch("/delete-file", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user_file(file_data: DeleteUserFile, current_user: models.User = Depends(oauth2.get_current_user),
                                 db: Session = Depends(get_db)):
-    
-    if not await utils.delete_file(settings.gallery_shots_path, file_data.file_name):
+    file_path = ''
+    if file_data.field_name == 'cv':
+        file_path = settings.cvs_path
+    elif file_data.field_name in USER_SHOTS_ATTRIBUTES:
+        file_path = settings.gallery_shots_path
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid field name.")
+
+    if not await utils.delete_file(file_path, file_data.file_name):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid file.")
 
     user_repository = UserRepository(db)
@@ -216,7 +223,7 @@ async def delete_user_file(file_data: DeleteUserFile, current_user: models.User 
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-@router.post("/upload-cv", )
+@router.patch("/upload-cv", )
 async def update_cv(file: UploadFile = File(...),
                                 current_user: models.User = Depends(oauth2.get_current_user),
                                 db: Session = Depends(get_db)):

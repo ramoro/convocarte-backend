@@ -18,4 +18,4 @@ NOREPLY_EMAIL=convocartenoreply@gmail.com
 
 PROFILE_PICTURES_PATH=./static/profile_pictures/
 CVS_PATH=./static/curriculums/
-
+GALLERY_SHOTS_PATH=./static/gallery_shots/
