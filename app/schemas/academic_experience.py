@@ -38,6 +38,8 @@ class AcademicExperienceBase(BaseModel):
             raise ValueError('End date must be after start date')
         return self
     
+class AcademicExperienceUpdate(AcademicExperienceBase):
+    id: int
 class AcademicExperienceResponse(AcademicExperienceBase):
     id: int
     user_id: int

@@ -1,38 +1,46 @@
-from fastapi import HTTPException, Depends, APIRouter, Request
+from fastapi import HTTPException, Depends, APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from repository.user import UserRepository
 from repository.academic_experience import AcademicExperienceRepository
 from repository.work_experience import WorkExperienceRepository
+from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword ,UserFullResponse, DeleteUserFile
+from schemas.academic_experience import AcademicExperienceBase, AcademicExperienceUpdate, AcademicExperienceResponse
+from schemas.work_experience import WorkExperienceBase, WorkExperienceResponse, WorkExperienceUpdate
+from database import get_db
 from starlette import status
 from starlette.responses import Response
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse
 from fastapi import File, UploadFile
-import secrets
 from fastapi.staticfiles import StaticFiles
+from typing import Optional
 from PIL import Image
+from config import settings
 import models
-from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword, UserFullResponse
-from schemas.academic_experience import AcademicExperienceBase, AcademicExperienceResponse
-from schemas.work_experience import WorkExperienceBase, WorkExperienceResponse
-from database import get_db
 import utils
 import oauth2
 import mailer
 import io
 import base64
-import os
 
 router = APIRouter(
     prefix="/users", #Indica que cada endpoint de este router va a comenzar con /users. Evita tener que pegarlo en todos lados
     tags=["Users"] #Crea grupo para endpoints de users en la doc de FastApi
 )
 
+# Atributos del modelo Usuario que llevan un string con la direccion de una imagen de la galeria del usuario
+# Los atributos son: foto plano pecho, foto de plano general, foto de perfil y dos fotos adicionales
+USER_SHOTS_ATTRIBUTES = ["chest_up_shot", "full_body_shot", "profile_shot", "additional_shot_1", "additional_shot_2"]
+def add_complete_url_shots(user):
+    for attribute in USER_SHOTS_ATTRIBUTES:
+        if getattr(user, attribute):
+            setattr(user, attribute, "http://localhost" + settings.gallery_shots_path[1:] + getattr(user, attribute))
+    
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db)):
-    user_repository = UserRepository()
+    user_repository = UserRepository(db)
     existing_user = user_repository.get_user_by_email(user.email)
 
     if existing_user:
@@ -63,11 +71,11 @@ def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db
     return new_user
 
 @router.get('/verification', response_model=UserResponse)
-def email_verification(token: str):
-    user_repository = UserRepository()
+def email_verification(token: str, db: Session = Depends(get_db)):
+    user_repository = UserRepository(db)
     try:
         print(f"Token en verification: {token}")
-        current_user = oauth2.get_current_user(user_repository, token, True)
+        current_user = oauth2.get_current_user(token, db, True)
     except Exception as e:
         #Si el token es invalido, ya sea porque esta falseado o caduco, el usuario no se verifica
         return RedirectResponse(url=f"http://localhost:8080/verified-account/None/None")
@@ -77,10 +85,10 @@ def email_verification(token: str):
 
     return RedirectResponse(url=f"http://localhost:8080/verified-account/{current_user.id}/{token}")
 
-@router.post('/password-recovering')
-def password_recovering(request: Request, pass_req: ForgetPasswordRequest):
+@router.patch('/password-recovering')
+def password_recovering(request: Request, pass_req: ForgetPasswordRequest, db: Session = Depends(get_db)):
 
-    user_repository = UserRepository()  
+    user_repository = UserRepository(db)  
     existing_user = user_repository.get_user_by_email(pass_req.email)
     
     if not existing_user:
@@ -99,9 +107,9 @@ def password_recovering(request: Request, pass_req: ForgetPasswordRequest):
     return {"message": "Email has been sent", "success": True,
         "status_code": status.HTTP_200_OK}
 
-@router.post("/reset-password")
-def reset_password(rfp: ResetForgetPassword):
-    user_repository = UserRepository()
+@router.patch("/reset-password")
+def reset_password(rfp: ResetForgetPassword, db: Session = Depends(get_db)):
+    user_repository = UserRepository(db)
     token_exception = HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Invalid Password Reset Payload or Reset Link Expired")
     info = oauth2.verify_access_token(rfp.secret_token, token_exception)
@@ -119,11 +127,25 @@ def reset_password(rfp: ResetForgetPassword):
     return {'success': True, 'status_code': status.HTTP_200_OK,
                 'message': 'Password Rest Successfull!'}
 
+@router.patch("/upload-image", )
+async def create_image(file: UploadFile = File(...),
+                            field_name: str = Form(...),
+                            old_file_name: Optional[str] = Form(None), 
+                            current_user: models.User = Depends(oauth2.get_current_user),
+                            db: Session = Depends(get_db)):
+    
+    #Depende que tipo de foto es, se guarda en diferentes paths
+    filepath = ""
+    if field_name == 'profile_picture':
+        filepath = settings.profile_pictures_path
+    elif field_name in USER_SHOTS_ATTRIBUTES:
+        filepath = settings.gallery_shots_path
 
-@router.post("/upload-profile-picture", )
-async def create_profile_picture(file: UploadFile = File(...),
-                                current_user: models.User = Depends(oauth2.get_current_user)):
-    FILEPATH = "./static/images/"
+    #En caso de que ya había un archivo antes se recibe su nombre para eliminarlo del back
+    if old_file_name != "null":
+        if not await utils.delete_file(filepath, old_file_name):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid old file name.")
+    
     filename = file.filename
     extension = filename.split(".")[-1].lower()
 
@@ -131,22 +153,14 @@ async def create_profile_picture(file: UploadFile = File(...),
         raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="File extension not allowed.")
     
-    #Genero numero random para el token, que seria le nombre de la imagen, para que no se pisen
-    token_name = secrets.token_hex(10) + "." + extension
-    generated_name = FILEPATH + token_name
-    file_content = await file.read()
-
-    # Eliminar la imagen de perfil anterior si existe
-    user_repository = UserRepository()
-    current_profile_picture = current_user.profile_picture
-
-    if current_profile_picture:
-        old_image_path = FILEPATH + current_profile_picture
-        if os.path.exists(old_image_path):
-            os.remove(old_image_path)
-
-    with open(generated_name, "wb") as file:
-        file.write(file_content)
+    token_name = ""
+    #Solo se indica la redimension en el caso de las fotos de la galeria
+    if field_name in USER_SHOTS_ATTRIBUTES:
+        token_name = await utils.store_file(extension, filepath, file, current_user.profile_picture, True, 600, 650)
+    else:
+        token_name = await utils.store_file(extension, filepath, file, current_user.profile_picture, False)
+    
+    generated_name = filepath + token_name
     
     img = Image.open(generated_name)
     #img = img.resize(size=(200, 200))
@@ -157,16 +171,67 @@ async def create_profile_picture(file: UploadFile = File(...),
     img.save(buffered, format='JPEG' if extension == 'jpg' else extension.upper())
     img_str = base64.b64encode(buffered.getvalue()).decode()
 
-    user_repository.update_user(current_user.id, {"profile_picture": token_name})
+    user_repository = UserRepository(db)
+    user_repository.update_user(current_user.id, {field_name: token_name})
 
     file_url="http://localhost" + generated_name[1:]
     return {'success': True, 'status_code': status.HTTP_200_OK,
             'filename': file_url, 'image': img_str}
 
+@router.patch("/delete-file", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user_file(file_data: DeleteUserFile, current_user: models.User = Depends(oauth2.get_current_user),
+                                db: Session = Depends(get_db)):
+    file_path = ''
+    if file_data.field_name == 'cv':
+        file_path = settings.cvs_path
+    elif file_data.field_name in USER_SHOTS_ATTRIBUTES:
+        file_path = settings.gallery_shots_path
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid field name.")
+
+    if not await utils.delete_file(file_path, file_data.file_name):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid file.")
+
+    user_repository = UserRepository(db)
+    user_repository.update_user(current_user.id, {file_data.field_name: None})
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.patch("/upload-cv", )
+async def update_cv(file: UploadFile = File(...),
+                    old_file_name: Optional[str] = Form(None), 
+                    current_user: models.User = Depends(oauth2.get_current_user),
+                    db: Session = Depends(get_db)):
+    
+    filepath = settings.cvs_path
+
+     #En caso de que ya había un archivo antes se recibe su nombre para eliminarlo del back
+    if old_file_name != "null":
+        if not await utils.delete_file(filepath, old_file_name):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid old file name.")
+
+    filename = file.filename
+    extension = filename.split(".")[-1].lower()
+
+    if extension not in ["pdf"]:
+        raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="File extension not allowed.")
+    
+    token_name = await utils.store_file(extension, filepath, file, current_user.cv, False)
+    generated_name = filepath + token_name
+    
+    user_repository = UserRepository(db)
+    user_repository.update_user(current_user.id, {"cv": token_name})
+
+    file_url="http://localhost" + generated_name[1:]
+    return {'success': True, 'status_code': status.HTTP_200_OK,
+            'filename': file_url}
+
 @router.post("/add-academic-experience", response_model=AcademicExperienceResponse)
 async def add_academic_experience(new_academic_experience: AcademicExperienceBase, 
-                                  current_user: models.User = Depends(oauth2.get_current_user)):
-    academic_exp_repository = AcademicExperienceRepository()
+                                  current_user: models.User = Depends(oauth2.get_current_user),
+                                  db: Session = Depends(get_db)):
+    academic_exp_repository = AcademicExperienceRepository(db)
     dict_academic_exp = new_academic_experience.model_dump()
     dict_academic_exp['user_id'] = current_user.id
     new_academic_exp = academic_exp_repository.add_new_academic_experience(dict_academic_exp)
@@ -174,8 +239,9 @@ async def add_academic_experience(new_academic_experience: AcademicExperienceBas
     return new_academic_exp
 
 @router.get("/my-academic-experiences", response_model=List[AcademicExperienceResponse])
-async def list_academic_experiences(current_user: models.User = Depends(oauth2.get_current_user)):
-    academic_exp_repository = AcademicExperienceRepository()
+async def list_academic_experiences(current_user: models.User = Depends(oauth2.get_current_user),
+                                    db: Session = Depends(get_db)):
+    academic_exp_repository = AcademicExperienceRepository(db)
     
     my_academic_experiences = academic_exp_repository.get_academic_experiences_by_user_id(current_user.id)
 
@@ -183,8 +249,8 @@ async def list_academic_experiences(current_user: models.User = Depends(oauth2.g
 
 @router.delete("/delete-academic-experience/{academic_exp_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_academic_experience(academic_exp_id: int, current_user: models.User = 
-                Depends(oauth2.get_current_user)):
-    academic_exp_repository = AcademicExperienceRepository()
+                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    academic_exp_repository = AcademicExperienceRepository(db)
 
     deleted = academic_exp_repository.delete_academic_experience(academic_exp_id)
     
@@ -194,9 +260,9 @@ def delete_academic_experience(academic_exp_id: int, current_user: models.User =
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.put("/update-academic-experience/{academic_exp_id}", response_model=AcademicExperienceBase)
-def update_academic_experience(academic_exp_id: int, updated_academic_exp: AcademicExperienceBase, current_user: models.User = 
-                Depends(oauth2.get_current_user)):
-    academic_exp_repository = AcademicExperienceRepository()
+def update_academic_experience(academic_exp_id: int, updated_academic_exp: AcademicExperienceUpdate, current_user: models.User = 
+                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    academic_exp_repository = AcademicExperienceRepository(db)
     updated_exp = academic_exp_repository.update_academic_experience(academic_exp_id, updated_academic_exp.model_dump())
 
     if not updated_exp:
@@ -206,8 +272,9 @@ def update_academic_experience(academic_exp_id: int, updated_academic_exp: Acade
 
 @router.post("/add-work-experience", response_model=WorkExperienceResponse)
 async def add_work_experience(new_work_experience: WorkExperienceBase, 
-                                  current_user: models.User = Depends(oauth2.get_current_user)):
-    work_exp_repository = WorkExperienceRepository()
+                                  current_user: models.User = Depends(oauth2.get_current_user),
+                                  db: Session = Depends(get_db)):
+    work_exp_repository = WorkExperienceRepository(db)
     dict_work_exp = new_work_experience.model_dump()
     dict_work_exp['user_id'] = current_user.id
     new_work_exp = work_exp_repository.add_new_work_experience(dict_work_exp)
@@ -215,8 +282,8 @@ async def add_work_experience(new_work_experience: WorkExperienceBase,
     return new_work_exp
 
 @router.get("/my-work-experiences", response_model=List[WorkExperienceResponse])
-async def list_work_experiences(current_user: models.User = Depends(oauth2.get_current_user)):
-    work_exp_repository = WorkExperienceRepository()
+async def list_work_experiences(current_user: models.User = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    work_exp_repository = WorkExperienceRepository(db)
     
     my_work_experiences = work_exp_repository.get_work_experiences_by_user_id(current_user.id)
 
@@ -224,8 +291,8 @@ async def list_work_experiences(current_user: models.User = Depends(oauth2.get_c
 
 @router.delete("/delete-work-experience/{work_exp_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_work_experience(work_exp_id: int, current_user: models.User = 
-                Depends(oauth2.get_current_user)):
-    work_exp_repository = WorkExperienceRepository()
+                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    work_exp_repository = WorkExperienceRepository(db)
 
     deleted = work_exp_repository.delete_work_experience(work_exp_id)
     
@@ -235,9 +302,9 @@ def delete_work_experience(work_exp_id: int, current_user: models.User =
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.put("/update-work-experience/{work_exp_id}", response_model=WorkExperienceBase)
-def update_work_experience(work_exp_id: int, updated_work_exp: WorkExperienceBase, current_user: models.User = 
-                Depends(oauth2.get_current_user)):
-    work_exp_repository = WorkExperienceRepository()
+def update_work_experience(work_exp_id: int, updated_work_exp: WorkExperienceUpdate, current_user: models.User = 
+                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    work_exp_repository = WorkExperienceRepository(db)
     updated_exp = work_exp_repository.update_work_experience(work_exp_id, updated_work_exp.model_dump())
 
     if not updated_exp:
@@ -255,17 +322,6 @@ def list_users(db: Session = Depends(get_db), current_user: models.User =
     #return {"data": all_users}
     return all_users
 
-@router.patch("/{user_id}")
-def update_user_partially(user_id: int, updated_data: UpdateUser, current_user: models.User = 
-                Depends(oauth2.get_current_user)):
-    user_respository = UserRepository()
-    updated_user = user_respository.update_user(user_id, updated_data.model_dump())
-
-    if not updated_user:
-        raise HTTPException(status_code=404, detail=f"User {updated_user} not found")
-
-    return updated_user
-
 
 @router.get("/filtered", response_model=List[UserResponse])
 def list_filtered_users(db: Session = Depends(get_db), current_user: models.User = 
@@ -280,16 +336,35 @@ def list_filtered_users(db: Session = Depends(get_db), current_user: models.User
     #return {"data": all_users}
     return all_users
 
-@router.get("/{user_id}")
+@router.get("/{user_id}", response_model=UserFullResponse)
 def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.User = 
                 Depends(oauth2.get_current_user)):
-    
-    user_repository = UserRepository()
+    #cursor.execute("""SELECT * FROM users where users.id = %s""", (str(user_id)))
+    #user = cursor.fetchone() 
+    user_repository = UserRepository(db)
     user = user_repository.get_user_by_id(user_id)
-    user = db.query(models.User).filter(models.User.id == user_id).first()
-    print(user)
+
     if not user:
         raise HTTPException(status_code=404, detail=f"User with {user_id} not found")
+    
+    if user.cv: 
+        user.cv = "http://localhost" + settings.cvs_path[1:] + user.cv
+    
+    add_complete_url_shots(user)
+
+    return user
+
+@router.patch("/{user_id}")
+def update_user_partially(user_id: int, updated_data: UpdateUser, current_user: models.User = 
+                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    user_respository = UserRepository(db)
+    user = user_respository.get_user_by_id(user_id)
+
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User {user} not found")
+
+    user_respository.update_user(user_id,  updated_data.model_dump(exclude_unset=True)) 
+    #exclude_unset es para remover los campos que el usuario no seteo, sino los toma como null y pisa datos
     
     return user
        
@@ -313,27 +388,27 @@ def delete_user(user_id: int, db: Session = Depends(get_db), current_user: model
     return Response(status_code=status.HTTP_204_NO_CONTENT)
     
 
-@router.put("/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, updated_user: UpdateUser, db: Session = Depends(get_db), current_user: models.User = 
-                Depends(oauth2.get_current_user)):
-    #cursor.execute("""UPDATE users
-    #               set username = %s,
-    #               fullname = %s,
-    #               email = %s,
-    #               password = %s
-    #               where id = %s
-    #               returning *""", (user.username, user.fullname, user.email, user.password, user_id))
-    #updated_user = cursor.fetchone()
-    #conn.commit()
+# @router.put("/{user_id}", response_model=UserResponse)
+# def update_user(user_id: int, updated_user: UpdateUser, db: Session = Depends(get_db), current_user: models.User = 
+#                 Depends(oauth2.get_current_user)):
+#     #cursor.execute("""UPDATE users
+#     #               set username = %s,
+#     #               fullname = %s,
+#     #               email = %s,
+#     #               password = %s
+#     #               where id = %s
+#     #               returning *""", (user.username, user.fullname, user.email, user.password, user_id))
+#     #updated_user = cursor.fetchone()
+#     #conn.commit()
 
-    user_query = db.query(models.User).filter(models.User.id == user_id)
+#     user_query = db.query(models.User).filter(models.User.id == user_id)
 
-    user = user_query.first()
+#     user = user_query.first()
     
-    if user == None:
-        raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+#     if user == None:
+#         raise HTTPException(status_code=404, detail=f"User {user_id} not found")
     
-    user_query.update(updated_user.model_dump(), synchronize_session=False)
-    db.commit()
+#     user_query.update(updated_user.model_dump(), synchronize_session=False)
+#     db.commit()
 
-    return user_query.first()
+#     return user_query.first()

@@ -1,4 +1,5 @@
 from jose import JWTError, jwt
+from database import get_db
 from datetime import datetime, timedelta
 from schemas import user
 from fastapi import FastAPI, HTTPException, Depends
@@ -7,7 +8,8 @@ from fastapi.security import OAuth2PasswordBearer
 import pytz
 import models
 from config import settings
-from repository.user import UserRepository
+from sqlalchemy.orm import Session
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl='login') #va nombre del path para logearse
 
@@ -49,7 +51,7 @@ def verify_access_token(token: str, credentials_exception):
     
     return token_data
     
-def get_current_user(user_repository: UserRepository = Depends(UserRepository), token: str = Depends(oauth2_scheme),  account_verification: bool = False):
+def get_current_user(token: str = Depends(oauth2_scheme),  db: Session = Depends(get_db), account_verification: bool = False):
     """Recibe un repository user, un token, y un booleano que indica si se esta haciendo la verificacion de cuenta
     o no. Revisa que el token sea valido y obtiene el usuario correspondiente. Devuelve el usuario obtenido.
     Lanza una excepcion de credencial en caso de que el usuario no este verificado y account_verifitacion sea false."""
@@ -58,8 +60,8 @@ def get_current_user(user_repository: UserRepository = Depends(UserRepository), 
                                           headers={"WWW-Authenticate": "Bearer"})
     
     token = verify_access_token(token, credentials_exception)
-    user = user_repository.get_user_by_id(token.id)
-
+    user = db.query(models.User).filter(models.User.id == token.id).first()
+    
     #Unicamente no se valida que la cuenta esta verificada cuando se corre el endpoint para verificar la cuenta
     if not account_verification and not user.is_verified:
         raise credentials_exception

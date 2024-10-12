@@ -14,7 +14,31 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
     profile_picture = Column(String)
-    #Caracteristicas fisicas
+    cv = Column(String)
+    reel_link = Column(String)
+
+    #Fotos del usuario
+    chest_up_shot = Column(String) #foto plano pecho
+    full_body_shot = Column(String) #foto plano entero
+    profile_shot = Column(String) #foto perfil
+    additional_shot_1 = Column(String)
+    additional_shot_2 = Column(String)
+ 
+    # Info basica, contacto y redes
+    age = Column(Integer)
+    gender = Column(String)
+    residence_country = Column(String)
+    locality = Column(String)
+    nationality = Column(String)
+    birth_date = Column(Date)
+    phone_number = Column(String)
+    phone_number_two = Column(String)
+    instagram = Column(String)
+    facebook = Column(String)
+    youtube_channel = Column(String)
+    website = Column(String)
+
+    # Caracteristicas fisicas
     weight = Column(Numeric(10, 2))
     height = Column(Numeric(10, 2))
     eyes_color = Column(String)
@@ -32,10 +56,11 @@ class User(Base):
     teeth = Column(String)
     braces = Column(Boolean)
     tattoos = Column(Boolean)
-    tattoosArea = Column(String)
+    tattoos_area = Column(String)
     piercings = Column(Boolean)
-    piercingsArea = Column(String)
+    piercings_area = Column(String)
     physical_characs_extra_info = Column(String)
+
     #Habilidades
     language_skills = Column(String)
     sports_skills = Column(String)
@@ -47,7 +72,6 @@ class User(Base):
     car_drivers_license = Column(Boolean)
     moto_drivers_license = Column(Boolean)
     skills_additionals = Column(String)
-
 
 class AcademicExperience(Base):
     __tablename__ = "academic_experiences"
@@ -66,12 +90,12 @@ class WorkExperience(Base):
 
     id = Column(Integer, primary_key=True, nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    workTitle = Column(String, nullable=False)
+    work_title = Column(String, nullable=False)
     role = Column(String, nullable=False)
     start_date = Column(Date, nullable=False) 
     end_date = Column(Date) #Puede no haber fecha de fin, significa que todavia esta en ese trabajo
     producer = Column(String)
-    projectUrl = Column(String)
+    project_url = Column(String)
     description = Column(String)
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))

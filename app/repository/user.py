@@ -1,11 +1,10 @@
 import models
-from database import get_db
 from sqlalchemy.orm import Session
 
 class UserRepository:
 
-    def __init__(self):
-        self.db: Session = next(get_db()) 
+    def __init__(self, db: Session):
+        self.db = db
 
     def get_user_by_email(self, email):
         #cursor.execute("""INSERT INTO users (username, fullname, email, password) 
@@ -28,14 +27,6 @@ class UserRepository:
 
         return new_user
     
-    def update_user(self, user_id, updated_data):
-        print("update user")
-        user_query = self.db.query(models.User).filter(models.User.id == user_id)
-
-        if not user_query.first():
-            return None
-
-        user_query.update(updated_data, synchronize_session=False)
+    def update_user(self, id, data):
+        self.db.query(models.User).filter(models.User.id == id).update(data, synchronize_session=False)
         self.db.commit()
-    
-        return user_query.first()

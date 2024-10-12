@@ -5,12 +5,12 @@ from models import WorkExperience
 from dateutil import parser
 
 class WorkExperienceBase(BaseModel):
-    workTitle: str
+    work_title: str
     role: str
     start_date: date
     end_date: Optional[Union[date, str]] #Puede ser una fecha o cadena vacia ya que no termino el estudio aun
     producer: str
-    projectUrl: str
+    project_url: str
     description: str
 
     @field_validator('start_date', mode='before')
@@ -40,7 +40,9 @@ class WorkExperienceBase(BaseModel):
         if isinstance(self.end_date, date) and self.start_date and self.end_date <= self.start_date:
             raise ValueError('End date must be after start date')
         return self
-    
+
+class WorkExperienceUpdate(WorkExperienceBase):
+    id: int
 class WorkExperienceResponse(WorkExperienceBase):
     id: int
     user_id: int
