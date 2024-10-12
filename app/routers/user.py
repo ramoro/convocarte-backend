@@ -127,50 +127,22 @@ def reset_password(rfp: ResetForgetPassword, db: Session = Depends(get_db)):
     return {'success': True, 'status_code': status.HTTP_200_OK,
                 'message': 'Password Rest Successfull!'}
 
-
-@router.patch("/upload-profile-picture", )
-async def create_profile_picture(file: UploadFile = File(...),
-                                current_user: models.User = Depends(oauth2.get_current_user),
-                                db: Session = Depends(get_db)):
-    filepath = settings.profile_pictures_path
-    filename = file.filename
-    extension = filename.split(".")[-1].lower()
-
-    if extension not in ["png", "jpg", "jpeg"]:
-        raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="File extension not allowed.")
-    
-    token_name = await utils.store_file(extension, filepath, file, current_user.profile_picture, False)
-    generated_name = filepath + token_name
-    
-    img = Image.open(generated_name)
-    #img = img.resize(size=(200, 200))
-    img.save(generated_name)
-
-    # Convertir la imagen a base64 para enviar al frontend. Pillow no acepta JPG
-    buffered = io.BytesIO()
-    img.save(buffered, format='JPEG' if extension == 'jpg' else extension.upper())
-    img_str = base64.b64encode(buffered.getvalue()).decode()
-
-    user_repository = UserRepository(db)
-    user_repository.update_user(current_user.id, {"profile_picture": token_name})
-
-    file_url="http://localhost" + generated_name[1:]
-    return {'success': True, 'status_code': status.HTTP_200_OK,
-            'filename': file_url, 'image': img_str}
-
-@router.patch("/upload-gallery-shot", )
-async def create_gallery_shot(file: UploadFile = File(...),
+@router.patch("/upload-image", )
+async def create_image(file: UploadFile = File(...),
                             field_name: str = Form(...),
                             old_file_name: Optional[str] = Form(None), 
                             current_user: models.User = Depends(oauth2.get_current_user),
                             db: Session = Depends(get_db)):
     
-    filepath = settings.gallery_shots_path
-    print(old_file_name)
+    filepath = ""
+    if field_name == 'profile_picture':
+        filepath = settings.profile_pictures_path
+    elif field_name in USER_SHOTS_ATTRIBUTES:
+        filepath = settings.gallery_shots_path
+
     #En caso de que ya había un archivo antes se recibe su nombre para eliminarlo del back
     if old_file_name != "null":
-        if not await utils.delete_file(settings.gallery_shots_path, old_file_name):
+        if not await utils.delete_file(filepath, old_file_name):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid old file name.")
     
     filename = file.filename
@@ -180,7 +152,13 @@ async def create_gallery_shot(file: UploadFile = File(...),
         raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="File extension not allowed.")
     
-    token_name = await utils.store_file(extension, filepath, file, current_user.profile_picture, True, 600, 650)
+    token_name = ""
+    #Solo se indica la redimension en el caso de las fotos de la galeria
+    if field_name in USER_SHOTS_ATTRIBUTES:
+        token_name = await utils.store_file(extension, filepath, file, current_user.profile_picture, True, 600, 650)
+    else:
+        token_name = await utils.store_file(extension, filepath, file, current_user.profile_picture, False)
+    
     generated_name = filepath + token_name
     
     img = Image.open(generated_name)
@@ -199,11 +177,6 @@ async def create_gallery_shot(file: UploadFile = File(...),
     return {'success': True, 'status_code': status.HTTP_200_OK,
             'filename': file_url, 'image': img_str}
 
-#TODO: TERMINAR EDNPOINT DE DELETE GALLERY SHOT, HACER DELETE CV, UNIFICAR LOS DE SUBIR IMAGENES. 
-# ACHICAR IMAGENES EN EL DE ARRIBA, UN POCO, QUE ENTREN EN EL CARRU
-#MODIFICAR EDNPOINT PARA Q CUANDO ACTUALIZAS UNA FOTO POR OTRA, LA ANTERIOR DE ELIMINE DEL BACK, DEBE PERMITIR EL ENDPOINT MANDAR LA ANTERIOR
-# esto es-> en los upload de fotos o cv, mandar tmb el anterior archivo si es q hay, y eliminarlo
-#cambiar los posts de upload-cv por patch
 @router.patch("/delete-file", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user_file(file_data: DeleteUserFile, current_user: models.User = Depends(oauth2.get_current_user),
                                 db: Session = Depends(get_db)):
