@@ -322,6 +322,18 @@ def list_users(db: Session = Depends(get_db), current_user: models.User =
     #return {"data": all_users}
     return all_users
 
+@router.patch("/{user_id}")
+def update_user_partially(user_id: int, updated_data: UpdateUser, current_user: models.User = 
+                Depends(oauth2.get_current_user)):
+    user_respository = UserRepository()
+    updated_user = user_respository.update_user(user_id, updated_data.model_dump())
+
+    if not updated_user:
+        raise HTTPException(status_code=404, detail=f"User {updated_user} not found")
+
+    return updated_user
+
+
 @router.get("/filtered", response_model=List[UserResponse])
 def list_filtered_users(db: Session = Depends(get_db), current_user: models.User = 
                 Depends(oauth2.get_current_user), limit: int = 10, skip: int = 0,
@@ -366,7 +378,7 @@ def update_user_partially(user_id: int, updated_data: UpdateUser, current_user: 
     #exclude_unset es para remover los campos que el usuario no seteo, sino los toma como null y pisa datos
     
     return user
-        
+       
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(user_id: int, db: Session = Depends(get_db), current_user: models.User = 
