@@ -134,6 +134,7 @@ async def create_image(file: UploadFile = File(...),
                             current_user: models.User = Depends(oauth2.get_current_user),
                             db: Session = Depends(get_db)):
     
+    #Depende que tipo de foto es, se guarda en diferentes paths
     filepath = ""
     if field_name == 'profile_picture':
         filepath = settings.profile_pictures_path
