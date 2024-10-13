@@ -1,0 +1,13 @@
+{
+    "Servers": {
+        "1": {
+            "Name": "convocarte_prod_connection",
+            "Group": "convocarte_group",
+            "Host": "convocarte-db2024-convocarte.l.aivencloud.com",
+            "Port": 24379,
+            "MaintenanceDB": "defaultdb",
+            "Username": "avnadmin",
+            "SSLMode": "require"
+        }
+    }
+}
