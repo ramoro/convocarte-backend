@@ -35,6 +35,14 @@ jobs:
     - name: Run Behave tests
       env:
         DATABASE_HOSTNAME: ${{ secrets.DATABASE_HOSTNAME }}
+        DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
+        DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
+        DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
+        DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+        SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+        SMTP_SERVER_PORT: ${{ secrets.SMTP_SERVER_PORT }}
+        SMTP_SERVER_USERNAME: ${{ secrets.SMTP_SERVER_USERNAME }}
+        SMTP_SERVER_PASSWORD: ${{ secrets.SMTP_SERVER_PASSWORD }}
       run: |
         pip install behave pydantic_settings  # Instala Behave para ejecutar los tests
         cd app
