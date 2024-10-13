@@ -34,7 +34,7 @@ jobs:
     # Step 4: Run Behave tests
     - name: Run Behave tests
       run: |
-        pip install behave  # Instala Behave para ejecutar los tests
+        pip install behave pydantic_settings  # Instala Behave para ejecutar los tests
         cd app
         behave  # Aquí se ejecutan los tests de Behave
 
