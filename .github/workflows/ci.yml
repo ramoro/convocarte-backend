@@ -1,4 +1,4 @@
-name: Build and Publish Image To DuckerHub
+name: Build, Test and Publish Image To DockerHub
 
 on:
   push:
@@ -8,21 +8,49 @@ on:
 
 jobs:
 
-  build:
+  build-test-deploy:
 
     runs-on: ubuntu-latest
 
     steps:
     - name: checkout
       uses: actions/checkout@v4
+
+    # Step 1: Build Docker image
     - name: build
       run: docker build . -t ramoro/convocarte-backend-docker-hub:latest
+
+    # Step 2: Start the Docker container
+    - name: Start app in Docker
+      run: |
+        docker run -d --name myapp -p 8000:8000 ramoro/convocarte-backend-docker-hub:latest
+
+    # Step 3: Wait for the app to be ready (you can customize this as needed)
+    - name: Wait for the app to be ready
+      run: |
+        echo "Waiting for the app to be ready..."
+        sleep 15  # Aumenta o disminuye según el tiempo que tarde tu aplicación en iniciarse completamente
+
+    # Step 4: Run Behave tests
+    - name: Run Behave tests
+      run: |
+        pip install behave  # Instala Behave para ejecutar los tests
+        behave  # Aquí se ejecutan los tests de Behave
+
+    # Step 5: Stop the Docker container
+    - name: Stop and remove Docker container
+      run: |
+        docker stop myapp
+        docker rm myapp
+
+    # Step 6: Login to DockerHub and publish image
     - name: publish
       run: |
        docker login -u ramoro -p ${{ secrets.DOCKERHUB_TOKEN }}
        docker push ramoro/convocarte-backend-docker-hub:latest
+
+    # Step 7: Deploy (only on main branch)
     - name: Deploy
-      # Only run this step if the branch is main
       if: github.ref == 'refs/heads/main'
       env:
         deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
