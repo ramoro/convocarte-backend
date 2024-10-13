@@ -35,6 +35,7 @@ jobs:
     - name: Run Behave tests
       run: |
         pip install behave  # Instala Behave para ejecutar los tests
+        cd app
         behave  # Aquí se ejecutan los tests de Behave
 
     # Step 5: Stop the Docker container
