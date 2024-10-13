@@ -33,6 +33,8 @@ jobs:
 
     # Step 4: Run Behave tests
     - name: Run Behave tests
+      env:
+        DATABASE_HOSTNAME: ${{ secrets.DATABASE_HOSTNAME }}
       run: |
         pip install behave pydantic_settings  # Instala Behave para ejecutar los tests
         cd app
