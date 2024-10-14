@@ -5,6 +5,7 @@ from routers import user, auth
 from fastapi.staticfiles import StaticFiles
 from config import settings
 import models
+import time
 
 app = FastAPI()
 
@@ -21,6 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+time.sleep(20)
 
 models.Base.metadata.create_all(bind=engine)
 
