@@ -7,8 +7,6 @@ services:
       - db
     ports:
       - "80:80"
-    networks:
-      - testing-network
     volumes:
       - ./app:/app
     environment:
@@ -23,8 +21,6 @@ services:
     restart: always
     ports:
       - "5432:5432"
-    networks:
-      - testing-network
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: root
