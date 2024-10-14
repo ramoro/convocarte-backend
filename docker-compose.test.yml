@@ -47,6 +47,11 @@ services:
       DATABASE_USERNAME: root
       DATABASE_PASSWORD: root
       DATABASE_NAME: test_db
+      BACKEND_URL: http://app
+      SMTP_SERVER: ${SMTP_SERVER}  # Pasa las variables desde el entorno
+      SMTP_SERVER_PORT: ${SMTP_SERVER_PORT}
+      SMTP_SERVER_USERNAME: ${SMTP_SERVER_USERNAME}
+      SMTP_SERVER_PASSWORD: ${SMTP_SERVER_PASSWORD}
     command: bash -c "pip install behave==1.2.6 pydantic_settings==2.3.1 sqlalchemy==1.4.45 psycopg2==2.9.9 && behave"
     
 networks:

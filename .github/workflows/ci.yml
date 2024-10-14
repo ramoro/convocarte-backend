@@ -31,18 +31,13 @@ jobs:
 
     # Step 4: Run Behave tests inside Docker
     - name: Run Behave tests
-      env:
-        DATABASE_HOSTNAME: db
-        DATABASE_PORT: 5432
-        DATABASE_USERNAME: root
-        DATABASE_NAME: test_db
-        DATABASE_PASSWORD: root
-        SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-        SMTP_SERVER_PORT: ${{ secrets.SMTP_SERVER_PORT }}
-        SMTP_SERVER_USERNAME: ${{ secrets.SMTP_SERVER_USERNAME }}
-        SMTP_SERVER_PASSWORD: ${{ secrets.SMTP_SERVER_PASSWORD }}
-        BACKEND_URL: http://app  # Cambiado para que use el nombre del servicio en Docker
-      run: docker compose -f docker-compose.test.yml run tests
+      run: |
+        docker compose -f docker-compose.test.yml run \
+          -e SMTP_SERVER=${{ secrets.SMTP_SERVER }} \
+          -e SMTP_SERVER_PORT=${{ secrets.SMTP_SERVER_PORT }} \
+          -e SMTP_SERVER_USERNAME=${{ secrets.SMTP_SERVER_USERNAME }} \
+          -e SMTP_SERVER_PASSWORD=${{ secrets.SMTP_SERVER_PASSWORD }} \
+          tests
 
     # Step 5: Stop and remove Docker containers
     - name: Stop and remove Docker containers
