@@ -44,7 +44,7 @@ jobs:
         SMTP_SERVER_USERNAME: ${{ secrets.SMTP_SERVER_USERNAME }}
         SMTP_SERVER_PASSWORD: ${{ secrets.SMTP_SERVER_PASSWORD }}
       run: |
-        pip install behave==1.2.6 pydantic_settings==2.3.1 sqlalchemy==1.4.45  # Instala Behave y lo necesario para ejecutar los tests
+        pip install --no-cache-dir -r /requirements.txt  # Instala Behave y lo necesario para ejecutar los tests
         cd app
         behave  # Aquí se ejecutan los tests de Behave
 
