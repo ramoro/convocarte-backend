@@ -29,29 +29,13 @@ jobs:
         echo "Waiting for the app to be ready..."
         sleep 15  # Ajusta según sea necesario
 
-    # Step 5: Run Behave tests
+    # Step 4: Run Behave tests inside Docker
     - name: Run Behave tests
-      env:
-        DATABASE_HOSTNAME: test_db
-        DATABASE_PORT: 5432
-        DATABASE_USERNAME: root
-        DATABASE_NAME: test_db
-        DATABASE_PASSWORD: root
-        SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-        SMTP_SERVER_PORT: ${{ secrets.SMTP_SERVER_PORT }}
-        SMTP_SERVER_USERNAME: ${{ secrets.SMTP_SERVER_USERNAME }}
-        SMTP_SERVER_PASSWORD: ${{ secrets.SMTP_SERVER_PASSWORD }}
-        BACKEND_URL: http://localhost:8000  # Usamos localhost ya que los tests corren en el host del runner
-      run: |
-        pip install behave==1.2.6 pydantic_settings==2.3.1 sqlalchemy==1.4.45 psycopg2==2.9.9
-        cd app
-        behave
+      run: docker-compose run tests
 
-    # Step 6: Stop and remove Docker containers
+    # Step 5: Stop and remove Docker containers
     - name: Stop and remove Docker containers
-      run: |
-        docker stop myapp test_db
-        docker rm myapp test_db
+      run: docker-compose down
 
     # Step 7: Login to DockerHub and publish image
     - name: publish
