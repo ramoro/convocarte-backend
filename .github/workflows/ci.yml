@@ -21,7 +21,7 @@ jobs:
 
     # Step 2: Set up PostgreSQL container for tests
     - name: Start test services with Docker Compose
-      run: docker-compose up -d
+      run: docker compose up -d
 
     # Step 4: Wait for the app to be ready
     - name: Wait for the app to be ready
