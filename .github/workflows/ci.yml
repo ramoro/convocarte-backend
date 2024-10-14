@@ -20,27 +20,8 @@ jobs:
       run: docker build . -t ramoro/convocarte-backend-docker-hub:latest
 
     # Step 2: Set up PostgreSQL container for tests
-    - name: Set up PostgreSQL for tests
-      run: |
-        docker run -d \
-          --name test_db \
-          -e POSTGRES_USER=root \
-          -e POSTGRES_PASSWORD=root \
-          -e POSTGRES_DB=test_db \
-          -p 5432:5432 \
-          postgres:14-alpine
-
-    # Step 3: Start the Docker container for backend
-    - name: Start app in Docker
-      run: |
-        docker run -d --name myapp \
-          -e DATABASE_HOSTNAME=test_db \
-          -e DATABASE_PORT=5432 \
-          -e DATABASE_USERNAME=root \
-          -e DATABASE_PASSWORD=root \
-          -e DATABASE_NAME=test_db \
-          -e BACKEND_URL=http://myapp:8000 \
-          -p 8000:8000 ramoro/convocarte-backend-docker-hub:latest
+    - name: Start test services with Docker Compose
+      run: docker-compose up -d
 
     # Step 4: Wait for the app to be ready
     - name: Wait for the app to be ready
