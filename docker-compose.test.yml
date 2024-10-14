@@ -31,6 +31,10 @@ services:
       DATABASE_USERNAME: root
       DATABASE_PASSWORD: root
       DATABASE_NAME: test_db
+      SMTP_SERVER: ${SMTP_SERVER}  # Pasa las variables desde el entorno
+      SMTP_SERVER_PORT: ${SMTP_SERVER_PORT}
+      SMTP_SERVER_USERNAME: ${SMTP_SERVER_USERNAME}
+      SMTP_SERVER_PASSWORD: ${SMTP_SERVER_PASSWORD}
 
   tests:
     image: python:3.10
