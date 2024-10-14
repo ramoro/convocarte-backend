@@ -28,14 +28,14 @@ jobs:
       run: |
         echo "Waiting for the app to be ready..."
         sleep 15  # Ajusta según sea necesario
-
+        
     # Step 4: Run Behave tests inside Docker
     - name: Run Behave tests
-      run: docker compose run tests
+      run: docker compose -f docker-compose.test.yml run tests
 
     # Step 5: Stop and remove Docker containers
     - name: Stop and remove Docker containers
-      run: docker compose down
+      run: docker compose -f docker-compose.test.yml down
 
     # Step 7: Login to DockerHub and publish image
     - name: publish
