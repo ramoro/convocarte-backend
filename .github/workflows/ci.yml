@@ -7,7 +7,6 @@ on:
     branches: [ "main" ]
 
 jobs:
-
   build-test-deploy:
 
     runs-on: ubuntu-latest
@@ -20,47 +19,66 @@ jobs:
     - name: build
       run: docker build . -t ramoro/convocarte-backend-docker-hub:latest
 
-    # Step 2: Start the Docker container
+    # Step 2: Set up PostgreSQL container for tests
+    - name: Set up PostgreSQL for tests
+      run: |
+        docker run -d \
+          --name test_db \
+          -e POSTGRES_USER=root \
+          -e POSTGRES_PASSWORD=root \
+          -e POSTGRES_DB=test_db \
+          -p 5432:5432 \
+          postgres:14-alpine
+
+    # Step 3: Start the Docker container for backend
     - name: Start app in Docker
       run: |
-        docker run -d --name myapp -p 8000:8000 ramoro/convocarte-backend-docker-hub:latest
+        docker run -d --name myapp \
+          -e DATABASE_HOSTNAME=test_db \
+          -e DATABASE_PORT=5432 \
+          -e DATABASE_USERNAME=root \
+          -e DATABASE_PASSWORD=root \
+          -e DATABASE_NAME=test_db \
+          -e BACKEND_URL=http://myapp:8000 \
+          -p 8000:8000 ramoro/convocarte-backend-docker-hub:latest
 
-    # Step 3: Wait for the app to be ready (you can customize this as needed)
+    # Step 4: Wait for the app to be ready
     - name: Wait for the app to be ready
       run: |
         echo "Waiting for the app to be ready..."
-        sleep 15  # Aumenta o disminuye según el tiempo que tarde tu aplicación en iniciarse completamente
+        sleep 15  # Ajusta según sea necesario
 
-    # Step 4: Run Behave tests
+    # Step 5: Run Behave tests
     - name: Run Behave tests
       env:
-        DATABASE_HOSTNAME: ${{ secrets.DATABASE_HOSTNAME }}
-        DATABASE_PORT: ${{ secrets.DATABASE_PORT }}
-        DATABASE_USERNAME: ${{ secrets.DATABASE_USERNAME }}
-        DATABASE_NAME: ${{ secrets.DATABASE_NAME }}
-        DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+        DATABASE_HOSTNAME: test_db
+        DATABASE_PORT: 5432
+        DATABASE_USERNAME: root
+        DATABASE_NAME: test_db
+        DATABASE_PASSWORD: root
         SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
         SMTP_SERVER_PORT: ${{ secrets.SMTP_SERVER_PORT }}
         SMTP_SERVER_USERNAME: ${{ secrets.SMTP_SERVER_USERNAME }}
         SMTP_SERVER_PASSWORD: ${{ secrets.SMTP_SERVER_PASSWORD }}
+        BACKEND_URL: http://localhost:8000  # Usamos localhost ya que los tests corren en el host del runner
       run: |
-        pip install behave==1.2.6 pydantic_settings==2.3.1 sqlalchemy==1.4.45 psycopg2==2.9.9  # Instala Behave y lo necesario para ejecutar los tests
+        pip install behave==1.2.6 pydantic_settings==2.3.1 sqlalchemy==1.4.45 psycopg2==2.9.9
         cd app
-        behave  # Aquí se ejecutan los tests de Behave
+        behave
 
-    # Step 5: Stop the Docker container
-    - name: Stop and remove Docker container
+    # Step 6: Stop and remove Docker containers
+    - name: Stop and remove Docker containers
       run: |
-        docker stop myapp
-        docker rm myapp
+        docker stop myapp test_db
+        docker rm myapp test_db
 
-    # Step 6: Login to DockerHub and publish image
+    # Step 7: Login to DockerHub and publish image
     - name: publish
       run: |
        docker login -u ramoro -p ${{ secrets.DOCKERHUB_TOKEN }}
        docker push ramoro/convocarte-backend-docker-hub:latest
 
-    # Step 7: Deploy (only on main branch)
+    # Step 8: Deploy (only on main branch)
     - name: Deploy
       if: github.ref == 'refs/heads/main'
       env:

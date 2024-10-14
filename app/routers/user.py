@@ -36,7 +36,7 @@ USER_SHOTS_ATTRIBUTES = ["chest_up_shot", "full_body_shot", "profile_shot", "add
 def add_complete_url_shots(user):
     for attribute in USER_SHOTS_ATTRIBUTES:
         if getattr(user, attribute):
-            setattr(user, attribute, "http://localhost" + settings.gallery_shots_path[1:] + getattr(user, attribute))
+            setattr(user, attribute, settings.backend_url + "/users/" + settings.gallery_shots_path[1:] + getattr(user, attribute))
     
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db)):
@@ -58,7 +58,7 @@ def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db
     new_user = user_repository.add_new_user(dict_user)
 
     access_token = oauth2.create_access_token(data = {"user_id": new_user.id})
-    email_verification_link = f"http://localhost/users/verification/?token={access_token}"
+    email_verification_link = settings.backend_url + f"/users/verification/?token={access_token}"
     
     context = {
         "request": request,
@@ -78,12 +78,12 @@ def email_verification(token: str, db: Session = Depends(get_db)):
         current_user = oauth2.get_current_user(token, db, True)
     except Exception as e:
         #Si el token es invalido, ya sea porque esta falseado o caduco, el usuario no se verifica
-        return RedirectResponse(url=f"http://localhost:8080/verified-account/None/None")
+        return RedirectResponse(url=settings.frontend_url + "/verified-account/None/None")
     
     if not current_user.is_verified:
         user_repository.update_user(current_user.id, {"is_verified": True})
 
-    return RedirectResponse(url=f"http://localhost:8080/verified-account/{current_user.id}/{token}")
+    return RedirectResponse(url=settings.frontend_url + f"/verified-account/{current_user.id}/{token}")
 
 @router.patch('/password-recovering')
 def password_recovering(request: Request, pass_req: ForgetPasswordRequest, db: Session = Depends(get_db)):
@@ -95,7 +95,7 @@ def password_recovering(request: Request, pass_req: ForgetPasswordRequest, db: S
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid email address.")
     
     secret_token = oauth2.create_access_token(data = {"user_id": existing_user.id})
-    reset_password_link = f"http://localhost:8080/reset-password/{secret_token}"
+    reset_password_link = settings.frontend_url + f"/reset-password/{secret_token}"
 
     context = {
         "request": request,
@@ -174,7 +174,7 @@ async def create_image(file: UploadFile = File(...),
     user_repository = UserRepository(db)
     user_repository.update_user(current_user.id, {field_name: token_name})
 
-    file_url="http://localhost" + generated_name[1:]
+    file_url = settings.backend_url + generated_name[1:]
     return {'success': True, 'status_code': status.HTTP_200_OK,
             'filename': file_url, 'image': img_str}
 
@@ -223,7 +223,7 @@ async def update_cv(file: UploadFile = File(...),
     user_repository = UserRepository(db)
     user_repository.update_user(current_user.id, {"cv": token_name})
 
-    file_url="http://localhost" + generated_name[1:]
+    file_url = settings.backend_url + generated_name[1:]
     return {'success': True, 'status_code': status.HTTP_200_OK,
             'filename': file_url}
 
@@ -348,7 +348,7 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.U
         raise HTTPException(status_code=404, detail=f"User with {user_id} not found")
     
     if user.cv: 
-        user.cv = "http://localhost" + settings.cvs_path[1:] + user.cv
+        user.cv = settings.backend_url + settings.cvs_path[1:] + user.cv
     
     add_complete_url_shots(user)
 

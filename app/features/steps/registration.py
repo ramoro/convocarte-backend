@@ -2,6 +2,7 @@ from behave import given, when, then
 import models
 import requests
 from environment import SessionLocal
+from config import settings
 
 @given('there is no account registered with the email "{email}"')
 def step_given_no_account_with_email(context, email):
@@ -14,7 +15,7 @@ def step_given_no_account_with_email(context, email):
 
 @when('I register an account with valid data')
 def step_when_register_account(context):
-    url = "http://localhost/users/"
+    url = settings.backend_url + "/users/"
     data = {field["field"]: field["value"] for field in context.table}
     response = requests.post(url, json=data)
     context.response = response
@@ -43,7 +44,7 @@ def step_given_account_with_email(context, email):
 
 @when('I try to register an account with the same email and a valid data')
 def step_when_register_account_with_same_email(context):
-    url = "http://localhost/users/"
+    url = settings.backend_url + "/users/"
     data = {field["field"]: field["value"] for field in context.table}
     response = requests.post(url, json=data)
     context.response = response
@@ -58,7 +59,7 @@ def step_then_user_notified_email_exists(context):
 
 @when('I register an account with that email and no full name')
 def step_when_register_account_with_no_fullname(context):
-    url = "http://localhost/users/"
+    url = settings.backend_url + "/users/"
     data = {field["field"]: field["value"] for field in context.table}
     response = requests.post(url, json=data)
     context.response = response
@@ -71,21 +72,21 @@ def step_then_user_notified_fullname_required(context):
 
 @when('I register an account with no email')
 def step_when_register_account_with_no_email(context):
-    url = "http://localhost/users/"
+    url = settings.backend_url + "/users/"
     data = {field["field"]: field["value"] for field in context.table}
     response = requests.post(url, json=data)
     context.response = response
 
 @when('I register an account with no password')
 def step_when_register_account_with_no_password(context):
-    url = "http://localhost/users/"
+    url = settings.backend_url + "/users/"
     data = {field["field"]: field["value"] for field in context.table}
     response = requests.post(url, json=data)
     context.response = response
 
 @when('I register with a password that does not match the confirmation password')
 def step_when_register_account_with_password_mismatch(context):
-    url = "http://localhost/users/"
+    url = settings.backend_url + "/users/"
     data = {field["field"]: field["value"] for field in context.table}
     response = requests.post(url, json=data)
     context.response = response

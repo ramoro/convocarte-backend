@@ -16,6 +16,9 @@ SMTP_SERVER_PASSWORD=pass
 
 NOREPLY_EMAIL=convocartenoreply@gmail.com
 
+BACKEND_URL=http://localhost
+FRONTEND_URL=http://localhost:8080
+
 PROFILE_PICTURES_PATH=./static/profile_pictures/
 CVS_PATH=./static/curriculums/
 GALLERY_SHOTS_PATH=./static/gallery_shots/

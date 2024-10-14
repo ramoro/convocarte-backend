@@ -3,13 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 from routers import user, auth
 from fastapi.staticfiles import StaticFiles
+from config import settings
 import models
 
 app = FastAPI()
 
 origins = [
-    "http://localhost",
-    "http://localhost:8080",
+    settings.backend_url,
+    settings.frontend_url,
 ]
 
 app.add_middleware(
