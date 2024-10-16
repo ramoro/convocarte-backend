@@ -35,6 +35,7 @@ services:
       SMTP_SERVER_PORT: ${SMTP_SERVER_PORT}
       SMTP_SERVER_USERNAME: ${SMTP_SERVER_USERNAME}
       SMTP_SERVER_PASSWORD: ${SMTP_SERVER_PASSWORD}
+      BACKEND_URL: http://app
 
   tests:
     image: python:3.10

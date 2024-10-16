@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     profile_pictures_path: str = "./static/profile_pictures/"
     cvs_path: str = "./static/curriculums/"
     gallery_shots_path: str = "./static/gallery_shots/"
-    backend_url: str = "http://localhost"
+    backend_url: str
     frontend_url: str = "http://localhost:8080"
     
     class Config:
