@@ -12,14 +12,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: checkout
+    - name: Checkout
       uses: actions/checkout@v4
 
     # Step 1: Build Docker image
-    - name: build
+    - name: Build
       run: docker build . -t ramoro/convocarte-backend-docker-hub:latest
 
     # Step 2: Set up PostgreSQL container for tests
+    # Necesario pasar las variables de entorno del SMTP_SERVER para que no falle
     - name: Start test services with Docker Compose
       env:
         SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
@@ -35,6 +36,7 @@ jobs:
         sleep 15  # Ajusta según sea necesario
 
     # Step 4: Run Behave tests inside Docker
+    # Necesario pasar las variables de entorno del SMTP_SERVER para que no falle
     - name: Run Behave tests
       env:
         SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
@@ -48,7 +50,7 @@ jobs:
       run: docker compose -f docker-compose.test.yml down
 
     # Step 7: Login to DockerHub and publish image
-    - name: publish
+    - name: Publish
       run: |
        docker login -u ramoro -p ${{ secrets.DOCKERHUB_TOKEN }}
        docker push ramoro/convocarte-backend-docker-hub:latest
