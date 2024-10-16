@@ -36,13 +36,12 @@ jobs:
 
     # Step 4: Run Behave tests inside Docker
     - name: Run Behave tests
-      run: |
-        docker compose -f docker-compose.test.yml run \
-          -e SMTP_SERVER=${{ secrets.SMTP_SERVER }} \
-          -e SMTP_SERVER_PORT=${{ secrets.SMTP_SERVER_PORT }} \
-          -e SMTP_SERVER_USERNAME=${{ secrets.SMTP_SERVER_USERNAME }} \
-          -e SMTP_SERVER_PASSWORD=${{ secrets.SMTP_SERVER_PASSWORD }} \
-          tests
+      env:
+        SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+        SMTP_SERVER_PORT: ${{ secrets.SMTP_SERVER_PORT }}
+        SMTP_SERVER_USERNAME: ${{ secrets.SMTP_SERVER_USERNAME }}
+        SMTP_SERVER_PASSWORD: ${{ secrets.SMTP_SERVER_PASSWORD }}
+      run: docker compose -f docker-compose.test.yml run tests
 
     # Step 5: Stop and remove Docker containers
     - name: Stop and remove Docker containers
