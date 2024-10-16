@@ -22,8 +22,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-time.sleep(20)
-
 models.Base.metadata.create_all(bind=engine)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
