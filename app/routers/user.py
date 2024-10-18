@@ -228,11 +228,11 @@ async def update_cv(file: UploadFile = File(...),
     if old_file_name != "null":
         if not await storage_manager.delete_file(filepath, old_file_name):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid old file name.")
-    
-    name_to_store, file_url = await storage_manager.store_file(extension, filepath, file, current_user.cv, False)
+    #Corregir el file_url que se genera para el cv, ya que tiene que tener el path de download
+    name_to_store_in_db, file_url = await storage_manager.store_file(extension, filepath, file, current_user.cv, False)
     
     user_repository = UserRepository(db)
-    user_repository.update_user(current_user.id, {"cv": name_to_store})
+    user_repository.update_user(current_user.id, {"cv": name_to_store_in_db})
 
     return {'success': True, 'status_code': status.HTTP_200_OK,
             'filename': file_url}

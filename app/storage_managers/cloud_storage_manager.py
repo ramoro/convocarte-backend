@@ -53,15 +53,20 @@ class CloudStorageManager:
         file_id = file.get('id')
         print(f"{file_metadata['name']} uploaded successfully to Google Drive with id {file_id}")
 
-        name_to_store = file_id + "." + extension
-        file_url = CLOUD_STORAGE_URL + file_id
+        #Con el id se ubica al archivo en google drive, por eso almacenamos su id
+        name_to_store_in_db = file_id
+        #Si es pdf el link que se le agrega es el de descarga
+        if extension.lower() == 'pdf':
+            file_url = CLOUD_STORAGE_DOWNLOAD_URL + file_id
+        else:
+            file_url = CLOUD_STORAGE_URL + file_id
 
-        return name_to_store, file_url
+        return name_to_store_in_db, file_url
     
     async def delete_file(self, filepath, filename):
         """Elimina un archivo de Google Drive a partir de su id, que esta en el filename."""
         try:
-            file_id = filename.split('.')[0]
+            file_id = filename
             self.drive_service.files().delete(fileId=file_id).execute()
             print(f"Successfully deleted file/folder with ID: {file_id}")
             return True
