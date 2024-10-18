@@ -12,6 +12,7 @@ app = FastAPI()
 origins = [
     settings.backend_url,
     settings.frontend_url,
+    "https://convocarte-frontend.onrender.com",  # URL del frontend desplegado
 ]
 
 app.add_middleware(
