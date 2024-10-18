@@ -27,6 +27,7 @@ jobs:
         SMTP_SERVER_PORT: ${{ secrets.SMTP_SERVER_PORT }}
         SMTP_SERVER_USERNAME: ${{ secrets.SMTP_SERVER_USERNAME }}
         SMTP_SERVER_PASSWORD: ${{ secrets.SMTP_SERVER_PASSWORD }}
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
       run: docker compose -f docker-compose.test.yml up -d
 
     # Step 4: Wait for the app to be ready
@@ -43,6 +44,7 @@ jobs:
         SMTP_SERVER_PORT: ${{ secrets.SMTP_SERVER_PORT }}
         SMTP_SERVER_USERNAME: ${{ secrets.SMTP_SERVER_USERNAME }}
         SMTP_SERVER_PASSWORD: ${{ secrets.SMTP_SERVER_PASSWORD }}
+        GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
       run: docker compose -f docker-compose.test.yml run tests
 
     # Step 5: Stop and remove Docker containers
