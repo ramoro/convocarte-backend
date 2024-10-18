@@ -18,17 +18,26 @@ from fastapi.staticfiles import StaticFiles
 from typing import Optional
 from PIL import Image
 from config import settings
+from storage_managers.local_storage_manager import LocalStorageManager
+from storage_managers.cloud_storage_manager import CloudStorageManager
+from storage_managers.cloud_storage_manager import CLOUD_STORAGE_DOWNLOAD_URL
+from storage_managers.cloud_storage_manager import CLOUD_STORAGE_URL
 import models
 import utils
 import oauth2
 import mailer
-import io
-import base64
 
 router = APIRouter(
     prefix="/users", #Indica que cada endpoint de este router va a comenzar con /users. Evita tener que pegarlo en todos lados
     tags=["Users"] #Crea grupo para endpoints de users en la doc de FastApi
 )
+
+
+# Defino el almacenamiento segun si es corrida local o no (si no es local los archivos se almacenan en Google Drive)
+if "localhost" in settings.backend_url:
+    storage_manager = LocalStorageManager()
+else:
+    storage_manager = CloudStorageManager() 
 
 # Atributos del modelo Usuario que llevan un string con la direccion de una imagen de la galeria del usuario
 # Los atributos son: foto plano pecho, foto de plano general, foto de perfil y dos fotos adicionales
@@ -36,8 +45,12 @@ USER_SHOTS_ATTRIBUTES = ["chest_up_shot", "full_body_shot", "profile_shot", "add
 def add_complete_url_shots(user):
     for attribute in USER_SHOTS_ATTRIBUTES:
         if getattr(user, attribute):
-            setattr(user, attribute, settings.backend_url + "/users/" + settings.gallery_shots_path[1:] + getattr(user, attribute))
-    
+            if "localhost" in settings.backend_url:
+                shot_url = settings.backend_url + settings.gallery_shots_path[1:] + getattr(user, attribute)
+            else:
+                shot_url = CLOUD_STORAGE_URL + getattr(user, attribute).split('.')[0] #Saco la extension, para google drive solo me interesa el id
+            setattr(user, attribute, shot_url)
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db)):
     user_repository = UserRepository(db)
@@ -141,42 +154,39 @@ async def create_image(file: UploadFile = File(...),
     elif field_name in USER_SHOTS_ATTRIBUTES:
         filepath = settings.gallery_shots_path
 
-    #En caso de que ya había un archivo antes se recibe su nombre para eliminarlo del back
-    if old_file_name != "null":
-        if not await utils.delete_file(filepath, old_file_name):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid old file name.")
-    
     filename = file.filename
     extension = filename.split(".")[-1].lower()
 
     if extension not in ["png", "jpg", "jpeg"]:
         raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="File extension not allowed.")
+
+    #En caso de que ya había un archivo antes se recibe su nombre para eliminarlo del back
+    if old_file_name != "null":
+        if not await storage_manager.delete_file(filepath, old_file_name):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid old file name.")
     
-    token_name = ""
+    name_to_store = ""
     #Solo se indica la redimension en el caso de las fotos de la galeria
     if field_name in USER_SHOTS_ATTRIBUTES:
-        token_name = await utils.store_file(extension, filepath, file, current_user.profile_picture, True, 600, 650)
+        name_to_store, file_url = await storage_manager.store_file(extension, filepath, file, current_user.profile_picture, True, 600, 650)
     else:
-        token_name = await utils.store_file(extension, filepath, file, current_user.profile_picture, False)
-    
-    generated_name = filepath + token_name
-    
-    img = Image.open(generated_name)
-    #img = img.resize(size=(200, 200))
-    img.save(generated_name)
+        name_to_store, file_url = await storage_manager.store_file(extension, filepath, file, current_user.profile_picture, False)
+        
+    # img = Image.open(generated_name)
+    # img = img.resize(size=(200, 200))
+    # img.save(generated_name)
 
-    # Convertir la imagen a base64 para enviar al frontend. Pillow no acepta JPG
-    buffered = io.BytesIO()
-    img.save(buffered, format='JPEG' if extension == 'jpg' else extension.upper())
-    img_str = base64.b64encode(buffered.getvalue()).decode()
+    # # Convertir la imagen a base64 para enviar al frontend. Pillow no acepta JPG
+    # buffered = io.BytesIO()
+    # img.save(buffered, format='JPEG' if extension == 'jpg' else extension.upper())
+    # img_str = base64.b64encode(buffered.getvalue()).decode()
 
     user_repository = UserRepository(db)
-    user_repository.update_user(current_user.id, {field_name: token_name})
+    user_repository.update_user(current_user.id, {field_name: name_to_store})
 
-    file_url = settings.backend_url + generated_name[1:]
     return {'success': True, 'status_code': status.HTTP_200_OK,
-            'filename': file_url, 'image': img_str}
+            'filename': file_url } #'image': img_str}
 
 @router.patch("/delete-file", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user_file(file_data: DeleteUserFile, current_user: models.User = Depends(oauth2.get_current_user),
@@ -188,8 +198,9 @@ async def delete_user_file(file_data: DeleteUserFile, current_user: models.User 
         file_path = settings.gallery_shots_path
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid field name.")
+    
 
-    if not await utils.delete_file(file_path, file_data.file_name):
+    if not await storage_manager.delete_file(file_path, file_data.file_name):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid file.")
 
     user_repository = UserRepository(db)
@@ -205,25 +216,23 @@ async def update_cv(file: UploadFile = File(...),
     
     filepath = settings.cvs_path
 
-     #En caso de que ya había un archivo antes se recibe su nombre para eliminarlo del back
-    if old_file_name != "null":
-        if not await utils.delete_file(filepath, old_file_name):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid old file name.")
-
     filename = file.filename
     extension = filename.split(".")[-1].lower()
 
     if extension not in ["pdf"]:
         raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="File extension not allowed.")
+
+    #En caso de que ya había un archivo antes se recibe su nombre para eliminarlo del back
+    if old_file_name != "null":
+        if not await storage_manager.delete_file(filepath, old_file_name):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid old file name.")
     
-    token_name = await utils.store_file(extension, filepath, file, current_user.cv, False)
-    generated_name = filepath + token_name
+    name_to_store, file_url = await storage_manager.store_file(extension, filepath, file, current_user.cv, False)
     
     user_repository = UserRepository(db)
-    user_repository.update_user(current_user.id, {"cv": token_name})
+    user_repository.update_user(current_user.id, {"cv": name_to_store})
 
-    file_url = settings.backend_url + generated_name[1:]
     return {'success': True, 'status_code': status.HTTP_200_OK,
             'filename': file_url}
 
@@ -347,8 +356,12 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.U
     if not user:
         raise HTTPException(status_code=404, detail=f"User with {user_id} not found")
     
-    if user.cv: 
-        user.cv = settings.backend_url + settings.cvs_path[1:] + user.cv
+    if user.cv:
+        #Si es corrida local uso el path local, sino la url para descargar desde google drive
+        if "localhost" in settings.backend_url:
+            user.cv = settings.backend_url + settings.cvs_path[1:] + user.cv
+        else:
+            user.cv = CLOUD_STORAGE_DOWNLOAD_URL + user.cv.split('.')[0] #Sacamos la extension para quedarnos solo con el id del archivo
     
     add_complete_url_shots(user)
 
