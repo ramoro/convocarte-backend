@@ -27,6 +27,7 @@ import utils
 import oauth2
 import mailer
 
+
 router = APIRouter(
     prefix="/users", #Indica que cada endpoint de este router va a comenzar con /users. Evita tener que pegarlo en todos lados
     tags=["Users"] #Crea grupo para endpoints de users en la doc de FastApi
