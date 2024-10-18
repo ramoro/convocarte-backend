@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     gallery_shots_path: str = "./static/gallery_shots/"
     backend_url: str
     frontend_url: str = "http://localhost:8080"
-    google_credentials: str
+    google_credentials: str = ""
 
     @property
     def google_credentials_dict(self):
