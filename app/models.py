@@ -100,3 +100,27 @@ class WorkExperience(Base):
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
     
+class FormTemplate(Base):
+    __tablename__ = "form_templates"
+    id = Column(Integer, primary_key=True, nullable=False)
+    owner_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    form_template_title = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True),
+                nullable=False, server_default=text('now()'))
+    #TODO: Luego se agregara el rol_id, es decir el rol al que esta asociado el formulario
+
+class FormTemplateField(Base):
+    __tablename__ = "form_template_fields"
+    id = Column(Integer, primary_key=True, nullable=False)
+    form_template_id = Column(Integer, ForeignKey('form_templates.id'), nullable=False)
+    title = Column(String, nullable=False)
+    type = Column(String, nullable=False)
+    order = Column(Integer, nullable=False)
+    is_required = Column(Boolean, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True),
+                nullable=False, server_default=text('now()'))
+
+
+
+
+    
