@@ -1,5 +1,6 @@
+from datetime import datetime
 from pydantic import BaseModel
-from typing import List   
+from typing import List
 
 class FormTemplateField(BaseModel):
     title: str
@@ -10,3 +11,8 @@ class FormTemplateField(BaseModel):
 class CreateFormTemplate(BaseModel):
     form_template_title: str
     form_template_fields: List[FormTemplateField]
+
+class FormTemplateResponse(BaseModel):
+    id: int
+    form_template_title: str
+    created_at: datetime

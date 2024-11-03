@@ -1,10 +1,11 @@
+from typing import List
 from fastapi import HTTPException, Depends, APIRouter
 from database import get_db
 from starlette import status
 from sqlalchemy.orm import Session
 import oauth2
 import models
-from schemas.form_template import CreateFormTemplate
+from schemas.form_template import CreateFormTemplate, FormTemplateResponse
 from repository.form_template import FormTemplateRepository
 
 router = APIRouter(
@@ -27,5 +28,15 @@ def create_form_template(form_template: CreateFormTemplate,
     
     return {'success': True, 'status_code': status.HTTP_201_CREATED,
             'form_template_title': form_template.form_template_title }
+
+@router.get("/", response_model=List[FormTemplateResponse])
+def get_user_form_templates(current_user: models.User = Depends(oauth2.get_current_user), 
+                         db: Session = Depends(get_db)):
+    
+    form_template_repository = FormTemplateRepository(db)
+
+    my_form_templates = form_template_repository.get_form_templates_by_user_id(current_user.id)
+
+    return my_form_templates
 
 

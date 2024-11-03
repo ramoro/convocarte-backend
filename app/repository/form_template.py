@@ -16,6 +16,10 @@ class FormTemplateRepository:
             )).first()
     
     def add_new_form_template(self, user_id, title, form_template_fields):
+        """Recibe el id del usuario, el titulo del formulario y una lista con los campos que posee
+        el template. Agrega el formulario en la tabla FormTemplates y cada campo con el formulario
+        asociado en la tabla FormTemplateFields. Devuelve el template almacenado o devuelve None en
+        caso de error."""
         try:
             new_template = models.FormTemplate(owner_id=user_id, form_template_title=title)
 
@@ -40,6 +44,10 @@ class FormTemplateRepository:
             return None
         
         return new_template
+    
+    def get_form_templates_by_user_id(self, user_id):
+        return self.db.query(models.FormTemplate).filter((models.FormTemplate.owner_id == user_id)).all()
+
 
 
 
