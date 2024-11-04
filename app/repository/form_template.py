@@ -48,6 +48,24 @@ class FormTemplateRepository:
     def get_form_templates_by_user_id(self, user_id):
         return self.db.query(models.FormTemplate).filter((models.FormTemplate.owner_id == user_id)).all()
 
+    def delete_form_template(self, form_template_id: int):
+        error= ""
+        try:
+            form_template = self.db.query(models.FormTemplate).filter(models.FormTemplate.id == form_template_id).first()
+            if form_template:
+                # Eliminar todos los campos asociados en una sola consulta
+                self.db.query(models.FormTemplateField).filter(models.FormTemplateField.form_template_id == form_template_id).delete(synchronize_session='fetch')
 
+                # Eliminar el formulario
+                self.db.delete(form_template)
+                self.db.commit() 
+                return True, error
+            error = "Not Found Error"
+            return False, error
+        except Exception as e:
+            self.db.rollback()  # Rollbackea si algo falla
+            error = "Database Error"
+            print(f"Error occurred: {e}") 
+            return False, error
 
 
