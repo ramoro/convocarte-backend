@@ -1,6 +1,5 @@
 import models
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
 
 class FormTemplateRepository:
@@ -48,6 +47,16 @@ class FormTemplateRepository:
     def get_form_templates_by_user_id(self, user_id):
         return self.db.query(models.FormTemplate).filter((models.FormTemplate.owner_id == user_id)).all()
 
+    def get_form_template_by_id(self, form_template_id):
+        form_template = (
+            self.db.query(models.FormTemplate)
+            .filter(models.FormTemplate.id == form_template_id)
+            .options(joinedload(models.FormTemplate.form_template_fields))  # Carga los campos asociados
+            .first()
+        )
+
+        return form_template
+    
     def delete_form_template(self, form_template_id: int):
         error= ""
         try:
@@ -67,5 +76,40 @@ class FormTemplateRepository:
             error = "Database Error"
             print(f"Error occurred: {e}") 
             return False, error
+        
+    def update_form_template(self, form_template_data):
+        try:
 
+            # Obtener el form template existente
+            form_template = self.db.query(models.FormTemplate).filter(models.FormTemplate.id == form_template_data.id).first()
+
+            if not form_template:
+                return None, "Not Found Error" 
+
+            # Actualizar titulo del form
+            form_template.form_template_title = form_template_data.form_template_title
+
+            #Se limpian los campos existentes
+            self.db.query(models.FormTemplateField).filter(models.FormTemplateField.form_template_id == form_template.id).delete()
+
+            # Agrega los nuevos campos
+            for field in form_template_data.form_template_fields:
+                new_field = models.FormTemplateField(
+                    form_template_id=form_template.id,
+                    title=field.title,
+                    type=field.type,
+                    order=field.order,
+                    is_required=field.is_required
+                )
+                self.db.add(new_field)
+
+            self.db.commit()
+            return form_template, ""
+        
+        except Exception as e:
+            self.db.rollback()  # Rollbackea si algo falla
+            print(f"Error occurred: {e}") 
+            return None, "Database Error"
+
+        
 
