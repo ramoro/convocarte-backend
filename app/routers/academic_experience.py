@@ -41,7 +41,7 @@ def delete_academic_experience(academic_exp_id: int, current_user: models.User =
     deleted = academic_exp_repository.delete_academic_experience(academic_exp_id)
     
     if not deleted:
-        raise HTTPException(status_code=404, detail=f"Academic experience {academic_exp_id} not found")
+        raise HTTPException(status_code=404, detail=f"Academic experience with id {academic_exp_id} not found")
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -52,6 +52,6 @@ def update_academic_experience(academic_exp_id: int, updated_academic_exp: Acade
     updated_exp = academic_exp_repository.update_academic_experience(academic_exp_id, updated_academic_exp.model_dump())
 
     if not updated_exp:
-        raise HTTPException(status_code=404, detail=f"Academic experience {academic_exp_id} not found")
+        raise HTTPException(status_code=404, detail=f"Academic experience with id {academic_exp_id} not found")
 
     return updated_exp

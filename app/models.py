@@ -125,6 +125,16 @@ class FormTemplateField(Base):
     # Definir la relación inversa
     form_template = relationship("FormTemplate", back_populates="form_template_fields")
 
+class Project(Base):
+    __tablename__ = "projects"
+    id = Column(Integer, primary_key=True, nullable=False)
+    owner_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    name = Column(String, nullable=False)
+    description = Column(String)
+    category = Column(String, nullable=False)
+    region = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
 
 
 
