@@ -18,8 +18,6 @@ def project_has_roles_with_same_name(roles):
     Devuelve true si se repiten roles con mismo nombre, False en caso contrario."""
     role_names = {}
 
-    print("ROLES", roles)
-
     for role in roles:
         if role.name not in role_names:
             role_names[role.name] = 1
