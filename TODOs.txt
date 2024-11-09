@@ -1,0 +1,20 @@
+*Reemplazar todos los redireccionamientos o uso de localhost en back y front por variables de entorno
+*Limpieza de usuarios que no se verificaron: Gestionar un job para que impacte en la bdd de forma tal que elimine todos los usuarios
+que tienen is_verified = false y created_at hace mas de 8 horas comparando con la fecha actual.
+
+CUENTAS:
+
+Cuenta render : ram.santos@hotmail.com
+Cuenta aiven bdd produccion: rsantos@fi.uba.ar
+Cuenta aiven bdd test: ramirantos@gmail.com
+Cuenta dockerhub: ramoro/ram.santos@hotmail.com
+Cuenta mailmug: rsantos@fi.uba.ar
+
+ C:\Users\Ramiro.santos\AppData\Local\Programs\Python\Python38\python -m pip list
+
+ Para instalar mjml:
+ npm install mjml
+ git clone https://github.com/mjmlio/mjml.git && cd mjml
+ yarn
+ yarn build
+ Para compilar: mjml input.mjml -o output.html

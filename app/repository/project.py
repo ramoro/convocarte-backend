@@ -14,12 +14,24 @@ class ProjectRepository:
                 models.Project.name == project_name
             )).first()
     
-    def add_new_project(self, dict_project):
-
+    def add_new_project(self, dict_project, roles):
+        """Recibe un diccionario con los datos de un proyecto y una lista de diccionarios, cada uno
+        con la información de un rol perteneciente al prouecto. Agrega el proyecto en la tabla Projects
+        y cada rol con el proyecto asociado en la tabla Roles. Devuelve el proyecto almacenado o None en caso 
+        contrario."""
         try:
             new_project = models.Project(**dict_project) 
 
             self.db.add(new_project)
+            self.db.flush() #Asi ya la variable se actualiza con el id generado para el proyecto
+
+            for role in roles:
+                new_role = models.Role(
+                    project_id=new_project.id,
+                    name=role.name,
+                    description=role.description
+                )
+                self.db.add(new_role)
 
             self.db.commit()
             self.db.refresh(new_project) 
