@@ -18,15 +18,15 @@ class Settings(BaseSettings):
     profile_pictures_path: str = "./static/profile_pictures/"
     cvs_path: str = "./static/curriculums/"
     gallery_shots_path: str = "./static/gallery_shots/"
+    casting_call_photos_path: str = ""
     backend_url: str
     frontend_url: str = "http://localhost:8080"
-    google_credentials: str = ""
+    google_credentials: str = "./static/casting_call_photos/"
 
     @property
     def google_credentials_dict(self):
         return json.loads(self.google_credentials)
 
-    
     class Config:
         env_file = "../.env"
 

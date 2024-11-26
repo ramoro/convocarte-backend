@@ -110,7 +110,7 @@ class FormTemplate(Base):
 
     # Definela relación con FormTemplateField
     form_template_fields = relationship("FormTemplateField", back_populates="form_template")
-    #TODO: Luego se agregara el rol_id, es decir el rol al que esta asociado el formulario
+    #TODO: Luego se agregara el rol_id, es decir el rol al que esta asociado el formulario. QUIZAS NO
 
 class FormTemplateField(Base):
     __tablename__ = "form_template_fields"
@@ -144,10 +144,41 @@ class Role(Base):
     project_id = Column(Integer, ForeignKey('projects.id'), nullable=False)
     name = Column(String, nullable=False)
     description = Column(String)
+    assigned_user_id = Column(Integer)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
     # Define la relación inversa con el proyecto al que esta asociado
     project = relationship("Project", back_populates="roles")
+
+class CastingCall(Base):
+    __tablename__ = "casting_calls"
+    id = Column(Integer, primary_key=True, nullable=False)
+    project_id = Column(Integer, ForeignKey('projects.id'), nullable=False)
+    owner_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(String)
+    start_date = Column(Date)
+    expiration_date = Column(Date)
+    remuneration_type =  Column(String, nullable=False)
+    casting_photos = Column(String)
+    state = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+class RoleByCastingCall(Base):
+    __tablename__ = "roles_by_casting_calls"
+    id = Column(Integer, primary_key=True, nullable=False)
+    role_id = Column(Integer, ForeignKey('roles.id'), nullable=False)
+    form_template_id = Column(Integer, ForeignKey('form_templates.id'), nullable=False)
+    casting_call_id = Column(Integer, ForeignKey('casting_calls.id'), nullable=False)
+    min_age_required = Column(Integer)
+    max_age_required = Column(Integer)
+    min_height_required = Column(Integer)
+    max_height_required = Column(Integer)
+    hair_colors_required = Column(String)
+    additional_requirements = Column(String)
+    has_limited_spots = Column(Boolean, nullable=False)
+    spots_amount = Column(Integer)
+    
 
 
 

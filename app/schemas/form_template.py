@@ -22,5 +22,6 @@ class FormTemplateWithFields(BaseModel):
     form_template_title: str
     created_at: datetime
     form_template_fields: List[FormTemplateField]
+    
 class UpdateFormTemplate(FormTemplateWithFields):
     original_form_template_title: str
