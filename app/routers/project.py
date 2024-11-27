@@ -34,6 +34,7 @@ def create_form_template(new_project: CreateProject,
     project_repository = ProjectRepository(db)
     dict_project = new_project.model_dump()
     dict_project['owner_id'] = current_user.id
+    dict_project['state'] = "Sin Uso"
     roles = new_project.roles
     dict_project.pop('roles')
 

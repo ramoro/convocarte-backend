@@ -14,6 +14,7 @@ class User(Base):
     is_verified = Column(Boolean, nullable=False, server_default=text('false'))
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
+                      
     profile_picture = Column(String)
     cv = Column(String)
     reel_link = Column(String)
@@ -106,6 +107,7 @@ class FormTemplate(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     owner_id = Column(Integer, ForeignKey('users.id'), nullable=False)
     form_template_title = Column(String, nullable=False)
+    state = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
     # Definela relación con FormTemplateField
@@ -117,7 +119,7 @@ class FormTemplateField(Base):
     id = Column(Integer, primary_key=True, nullable=False)
     form_template_id = Column(Integer, ForeignKey('form_templates.id'), nullable=False)
     title = Column(String, nullable=False)
-    type = Column(String, nullable=False)
+    type = Column(String, nullable=False) 
     order = Column(Integer, nullable=False)
     is_required = Column(Boolean, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
@@ -133,6 +135,7 @@ class Project(Base):
     description = Column(String)
     category = Column(String, nullable=False)
     region = Column(String, nullable=False)
+    state = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
     # Define la relación con Roles

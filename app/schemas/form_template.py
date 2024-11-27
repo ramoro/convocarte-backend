@@ -16,6 +16,7 @@ class FormTemplateResponse(BaseModel):
     id: int
     form_template_title: str
     created_at: datetime
+    state: str
 
 class FormTemplateWithFields(BaseModel):
     id: int
