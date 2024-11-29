@@ -48,18 +48,18 @@ async def create_casting_call(title: str = Form(...),
     #Validamos que haya enviado entidades que existen en la bdd
     if not project_repository.get_project_by_id(project_id):
         raise HTTPException(status_code=404, detail=f"Project with id {project_id} not found.")
-    
+
     #Validacion y armado de lista de roles
     roles_list = []
     for role_data in casting_roles:
         role = json.loads(role_data)
-
+        
         #Validacion de campos requeridos por cada rol
         if not role.get('role_id'):
             raise HTTPException(status_code=400, detail="role_id is required for each role.")
     
         if not role.get('form_template_id'):
-            raise HTTPException(status_code=400, detail="form_template_id is required for each role.")
+            raise HTTPException(status_code=400, detail="Form template is required for each role. Every role needs the field form_template.")
         
         #Validacion de ids existentes en la bdd
         if not role_repository.get_role_by_id(role["role_id"]):
@@ -113,10 +113,13 @@ def get_user_casting_calls(current_user: models.User = Depends(oauth2.get_curren
     my_casting_calls = casting_call_repository.get_casting_calls_by_user_id(current_user.id)
 
     for casting_call in my_casting_calls:
-        print(casting_call)
         if casting_call.casting_photos:
             #Si es corrida local uso el path local, sino la url para descargar desde google drive
             if "localhost" in settings.backend_url:
-                casting_call.casting_photos = settings.backend_url + settings.casting_call_photos_path[1:] + casting_call.casting_photos.split(",")[0]
-
+                #Se hace un split y se le agrega a cada photo el path donde se ubica localmente
+                photos_with_paths = list(map(lambda photo_name : settings.backend_url + settings.casting_call_photos_path[1:] + photo_name, casting_call.casting_photos.split(",")))
+                casting_call.casting_photos = photos_with_paths
+        else:
+            casting_call.casting_photos = []
+    
     return my_casting_calls
