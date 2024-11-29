@@ -30,4 +30,4 @@ class CastingCallPreviewResponse(BaseModel):
     title: str
     remuneration_type: str
     state: str
-    casting_photos: Optional[str] = None #Se manda solo una, la primera, que funciona como portada
+    casting_photos: Optional[List[str]] = None
