@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 from pydantic import BaseModel
 from typing import List
 from typing import Optional, Union
@@ -31,3 +31,4 @@ class CastingCallPreviewResponse(BaseModel):
     remuneration_type: str
     state: str
     casting_photos: Optional[List[str]] = None
+    created_at: datetime
