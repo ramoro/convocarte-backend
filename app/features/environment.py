@@ -28,4 +28,10 @@ def before_scenario(context, scenario):
 
 def after_scenario(context, scenario):
     """Limpieza después de cada escenario."""
+    # No alcanza con el delete on cascade, asi que se eliminan estas tablas
+    # en este orden para que no haya problemas de foreign key
+    context.database.query(models.RoleByCastingCall).delete()
+    context.database.query(models.CastingCall).delete()
+    context.database.query(models.Role).delete()
+    context.database.commit()
     context.database.close()

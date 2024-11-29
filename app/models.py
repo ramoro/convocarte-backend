@@ -14,6 +14,14 @@ class User(Base):
     is_verified = Column(Boolean, nullable=False, server_default=text('false'))
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
+    
+    #Al eliminarlo tmbien se eliminan los form_templates, proyectos y castings asociados                
+    form_templates = relationship("FormTemplate", back_populates="owner", cascade="all, delete")
+    projects = relationship("Project", back_populates="owner", cascade="all, delete-orphan")
+    casting_calls = relationship("CastingCall", back_populates="owner", cascade="all, delete")
+
+
+
     profile_picture = Column(String)
     cv = Column(String)
     reel_link = Column(String)
@@ -104,20 +112,23 @@ class WorkExperience(Base):
 class FormTemplate(Base):
     __tablename__ = "form_templates"
     id = Column(Integer, primary_key=True, nullable=False)
-    owner_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    owner_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, )
     form_template_title = Column(String, nullable=False)
+    state = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    owner = relationship("User", back_populates="form_templates")
+
 
     # Definela relación con FormTemplateField
     form_template_fields = relationship("FormTemplateField", back_populates="form_template")
-    #TODO: Luego se agregara el rol_id, es decir el rol al que esta asociado el formulario
+    #TODO: Luego se agregara el rol_id, es decir el rol al que esta asociado el formulario. QUIZAS NO
 
 class FormTemplateField(Base):
     __tablename__ = "form_template_fields"
     id = Column(Integer, primary_key=True, nullable=False)
-    form_template_id = Column(Integer, ForeignKey('form_templates.id'), nullable=False)
+    form_template_id = Column(Integer, ForeignKey('form_templates.id', ondelete="CASCADE"), nullable=False)
     title = Column(String, nullable=False)
-    type = Column(String, nullable=False)
+    type = Column(String, nullable=False) 
     order = Column(Integer, nullable=False)
     is_required = Column(Boolean, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
@@ -133,7 +144,11 @@ class Project(Base):
     description = Column(String)
     category = Column(String, nullable=False)
     region = Column(String, nullable=False)
+    state = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    owner = relationship("User", back_populates="projects")
 
     # Define la relación con Roles
     roles = relationship("Role", back_populates="project")
@@ -144,10 +159,42 @@ class Role(Base):
     project_id = Column(Integer, ForeignKey('projects.id'), nullable=False)
     name = Column(String, nullable=False)
     description = Column(String)
+    assigned_user_id = Column(Integer)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
     # Define la relación inversa con el proyecto al que esta asociado
     project = relationship("Project", back_populates="roles")
+
+class CastingCall(Base):
+    __tablename__ = "casting_calls"
+    id = Column(Integer, primary_key=True, nullable=False)
+    project_id = Column(Integer, ForeignKey('projects.id'), nullable=False)
+    owner_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
+    owner = relationship("User", back_populates="casting_calls")
+    title = Column(String, nullable=False)
+    description = Column(String)
+    start_date = Column(Date)
+    expiration_date = Column(Date)
+    remuneration_type =  Column(String, nullable=False)
+    casting_photos = Column(String)
+    state = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+
+class RoleByCastingCall(Base):
+    __tablename__ = "roles_by_casting_calls"
+    id = Column(Integer, primary_key=True, nullable=False)
+    role_id = Column(Integer, ForeignKey('roles.id', ondelete="CASCADE"), nullable=False)
+    form_template_id = Column(Integer, ForeignKey('form_templates.id', ondelete="CASCADE"), nullable=False)
+    casting_call_id = Column(Integer, ForeignKey('casting_calls.id', ondelete="CASCADE"), nullable=False)
+    min_age_required = Column(Integer)
+    max_age_required = Column(Integer)
+    min_height_required = Column(Integer)
+    max_height_required = Column(Integer)
+    hair_colors_required = Column(String)
+    additional_requirements = Column(String)
+    has_limited_spots = Column(Boolean, nullable=False)
+    spots_amount = Column(Integer)
+    
 
 
 

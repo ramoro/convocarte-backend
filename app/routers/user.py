@@ -165,10 +165,11 @@ async def create_image(file: UploadFile = File(...),
     
     name_to_store = ""
     #Solo se indica la redimension en el caso de las fotos de la galeria
+    #TODO: eliminar foto almacenada si falla update_user del repository
     if field_name in USER_SHOTS_ATTRIBUTES:
-        name_to_store, file_url = await storage_manager.store_file(extension, filepath, file, current_user.profile_picture, True, 600, 650)
+        name_to_store, file_url = await storage_manager.store_file(extension, filepath, file, True, 600, 650, existing_file=current_user.profile_picture)
     else:
-        name_to_store, file_url = await storage_manager.store_file(extension, filepath, file, current_user.profile_picture, False)
+        name_to_store, file_url = await storage_manager.store_file(extension, filepath, file, False)
         
     # img = Image.open(generated_name)
     # img = img.resize(size=(200, 200))
@@ -196,7 +197,7 @@ async def delete_user_file(file_data: DeleteUserFile, current_user: models.User 
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid field name.")
     
-
+    #TODO: si falla update_user del repository se debe reestablecer file
     if not await storage_manager.delete_file(file_path, file_data.file_name):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid file.")
 
@@ -225,7 +226,8 @@ async def update_cv(file: UploadFile = File(...),
         if not await storage_manager.delete_file(filepath, old_file_name):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid old file name.")
     #Corregir el file_url que se genera para el cv, ya que tiene que tener el path de download
-    name_to_store_in_db, file_url = await storage_manager.store_file(extension, filepath, file, current_user.cv, False)
+    #TODO: si falla user_repository.update_user se debe eliminar el archivo almacenado
+    name_to_store_in_db, file_url = await storage_manager.store_file(extension, filepath, file, False, existing_file=current_user.cv)
     
     user_repository = UserRepository(db)
     user_repository.update_user(current_user.id, {"cv": name_to_store_in_db})
@@ -271,7 +273,7 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.U
     if user.cv:
         #Si es corrida local uso el path local, sino la url para descargar desde google drive
         if "localhost" in settings.backend_url:
-            user.cv = settings.backend_url + settings.cvs_path[1:] + user.cv
+            user.cv = settings.backend_url + settings.cvs_path[1:] + user.cv #Con el [1:] se saca el "."
         else:
             user.cv = CLOUD_STORAGE_DOWNLOAD_URL + user.cv.split('.')[0] #Sacamos la extension para quedarnos solo con el id del archivo
     

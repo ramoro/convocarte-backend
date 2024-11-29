@@ -20,7 +20,7 @@ class CloudStorageManager:
         credentials = service_account.Credentials.from_service_account_info(settings.google_credentials_dict, scopes=SCOPES)
         self.drive_service = build('drive', 'v3', credentials=credentials)
 
-    async def store_file(self, extension, filepath, new_file, existing_file, resize, max_width_resize=0, max_height_resize=0):
+    async def store_file(self, extension, filepath, new_file, resize, max_width_resize=0, max_height_resize=0, existing_file=None):
         # Generar el nombre del archivo en hexadecimal
         token_name = secrets.token_hex(10) + "." + extension
 

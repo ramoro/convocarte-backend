@@ -5,7 +5,7 @@ from starlette import status
 from sqlalchemy.orm import Session
 import oauth2
 import models
-from schemas.project import CreateProject, ProjectResponse
+from schemas.project import CreateProject, ProjectResponse, ProjectWithRolesResponse
 from repository.project import ProjectRepository
 
 router = APIRouter(
@@ -34,6 +34,7 @@ def create_form_template(new_project: CreateProject,
     project_repository = ProjectRepository(db)
     dict_project = new_project.model_dump()
     dict_project['owner_id'] = current_user.id
+    dict_project['state'] = "Sin Uso"
     roles = new_project.roles
     dict_project.pop('roles')
 
@@ -58,3 +59,13 @@ def get_user_projects(current_user: models.User = Depends(oauth2.get_current_use
     my_projects = project_repository.get_projects_by_user_id(current_user.id)
 
     return my_projects
+
+@router.get("/with-roles", response_model=List[ProjectWithRolesResponse])
+def get_user_projects_with_roles(current_user: models.User = Depends(oauth2.get_current_user), 
+                         db: Session = Depends(get_db)):
+    
+    project_repository = ProjectRepository(db)
+
+    my_projects_with_roles = project_repository.get_user_projects_with_roles(current_user.id)
+
+    return my_projects_with_roles

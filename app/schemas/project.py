@@ -6,6 +6,9 @@ class Role(BaseModel):
     name: str
     description: Optional[str] = None
 
+class RoleWithId(Role):
+    id: int
+
 class CreateProject(BaseModel):
     name: str
     description: Optional[str] = None
@@ -18,4 +21,7 @@ class ProjectResponse(BaseModel):
     name: str
     category: str
     created_at: datetime
+    state: str
 
+class ProjectWithRolesResponse(ProjectResponse):
+    roles: List[RoleWithId]

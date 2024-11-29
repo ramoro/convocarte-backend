@@ -5,7 +5,7 @@ import os
 
 class LocalStorageManager:
 
-    async def store_file(self, extension, filepath, new_file, existing_file, resize, max_width_resize=0, max_height_resize=0):
+    async def store_file(self, extension, filepath, new_file, resize, max_width_resize=0, max_height_resize=0, existing_file=None):
         """Recibe la extension de un archivo, el path donde deberia ser almacenado, el contenido del archivo
         a almacenar, el archivo ya existente a ser reemplazado y un booleano que indica si la imagen debe ser redimensionada
         al almacenarse, junto con los valores de redimension. Genera un nombre en hexadecimal para el archivo

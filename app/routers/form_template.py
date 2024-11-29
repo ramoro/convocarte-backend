@@ -23,7 +23,7 @@ def create_form_template(form_template: CreateFormTemplate,
     if form_template_repository.get_form_template_by_user_id_and_title(current_user.id, form_template.form_template_title):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The user already has a form template with the title " + form_template.form_template_title)
 
-    if not form_template_repository.add_new_form_template(current_user.id, form_template.form_template_title, form_template.form_template_fields):
+    if not form_template_repository.add_new_form_template(current_user.id, form_template.form_template_title, "Sin Uso", form_template.form_template_fields):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while creating the form template")
     
     return {'success': True, 'status_code': status.HTTP_201_CREATED,

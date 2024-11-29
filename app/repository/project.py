@@ -44,4 +44,14 @@ class ProjectRepository:
     
     def get_projects_by_user_id(self, user_id):
         return self.db.query(models.Project).filter((models.Project.owner_id == user_id)).all()
+    
+    def get_user_projects_with_roles(self, user_id):
+        projects = self.db.query(models.Project).filter(models.Project.owner_id == user_id).\
+        options(joinedload(models.Project.roles)).all()
+
+        return projects
+    
+    def get_project_by_id(self, project_id):
+        return self.db.query(models.Project).filter((models.Project.id == project_id)).first()
+
 

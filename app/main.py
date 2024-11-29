@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine
-from routers import user, auth, form_template, academic_experience, work_experience, project
+from routers import user, auth, form_template, academic_experience, work_experience, project, casting_call
 from fastapi.staticfiles import StaticFiles
 from config import settings
 import models
@@ -32,6 +32,7 @@ app.include_router(work_experience.router)
 app.include_router(auth.router)
 app.include_router(form_template.router)
 app.include_router(project.router)
+app.include_router(casting_call.router)
 
 @app.get("/")
 def root():
