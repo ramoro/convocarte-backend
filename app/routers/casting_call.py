@@ -14,7 +14,7 @@ from fastapi import File, UploadFile
 from config import settings
 import json
 from storage_managers.local_storage_manager import LocalStorageManager
-from storage_managers.cloud_storage_manager import CloudStorageManager
+from storage_managers.cloud_storage_manager import CloudStorageManager, CLOUD_STORAGE_URL
 
 # Defino el almacenamiento segun si es corrida local o no (si no es local los archivos se almacenan en Google Drive)
 if "localhost" in settings.backend_url:
@@ -118,7 +118,11 @@ def get_user_casting_calls(current_user: models.User = Depends(oauth2.get_curren
             if "localhost" in settings.backend_url:
                 #Se hace un split y se le agrega a cada photo el path donde se ubica localmente
                 photos_with_paths = list(map(lambda photo_name : settings.backend_url + settings.casting_call_photos_path[1:] + photo_name, casting_call.casting_photos.split(",")))
-                casting_call.casting_photos = photos_with_paths
+            else:
+                #Para el caso de google drive, se saca la extension de la foto, quedando solo el nombre, que es el id que tiene en el google drive
+                photos_with_paths = list(map(lambda photo_name : CLOUD_STORAGE_URL + photo_name.split('.')[0], casting_call.casting_photos.split(",")))
+            
+            casting_call.casting_photos = photos_with_paths
         else:
             casting_call.casting_photos = []
     
