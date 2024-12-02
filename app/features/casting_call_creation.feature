@@ -1,7 +1,7 @@
 Feature: Casting Call Creation
   As a casting director
   I want to be able to create a casting associated with my project
-  So that other artists can apply, allowing me to evaluate them
+  So I can publish it when I decide to start my artists search for my project
 
   Scenario: Successful Casting Call creation
     Given Im logged in on the platform with my account
