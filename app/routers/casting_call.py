@@ -5,7 +5,7 @@ from starlette import status
 from sqlalchemy.orm import Session
 import oauth2
 import models
-from schemas.casting_call import CastingCallPreviewResponse
+from schemas.casting_call import CastingCallPreviewResponse, CastingCallPublication, PublishedCastingCallResponse
 from repository.casting_call import CastingCallRepository
 from repository.project import ProjectRepository
 from repository.role import RoleRepository
@@ -13,6 +13,8 @@ from repository.form_template import FormTemplateRepository
 from fastapi import File, UploadFile
 from config import settings
 import json
+import pytz
+from datetime import datetime
 from storage_managers.local_storage_manager import LocalStorageManager
 from storage_managers.cloud_storage_manager import CloudStorageManager, CLOUD_STORAGE_URL
 
@@ -63,9 +65,9 @@ async def create_casting_call(title: str = Form(...),
         
         #Validacion de ids existentes en la bdd
         if not role_repository.get_role_by_id(role["role_id"]):
-             raise HTTPException(status_code=404, detail=f"Role with id {role['role_id']} not found.")
+            raise HTTPException(status_code=404, detail=f"Role with id {role['role_id']} not found.")
         if not form_template_repository.get_form_template_by_id(role["form_template_id"]):
-             raise HTTPException(status_code=404, detail=f"Form template with id {role['form_template_id']} not found.")
+            raise HTTPException(status_code=404, detail=f"Form template with id {role['form_template_id']} not found.")
         
         roles_list.append(role)
 
@@ -127,3 +129,29 @@ def get_user_casting_calls(current_user: models.User = Depends(oauth2.get_curren
             casting_call.casting_photos = []
     
     return my_casting_calls
+
+@router.patch("/publish/{casting_id}")
+def publish_casting_call(casting_id: int, casting_call: CastingCallPublication, 
+                         current_user: models.User = Depends(oauth2.get_current_user), 
+                         db: Session = Depends(get_db)) -> PublishedCastingCallResponse:
+    
+    if casting_call.state == "Finalizado":
+        raise HTTPException(status_code=400, detail="The casting cannot be published because it has already ended.")
+
+    casting_call_repository = CastingCallRepository(db)
+
+    #Le seteo la fecha de publicacion con la fecha actual
+    casting_call_dict = casting_call.model_dump()
+    argentina_tz = pytz.timezone('America/Argentina/Buenos_Aires')
+    casting_call_dict['start_date'] = datetime.now(argentina_tz).date()
+
+    #Le seteo el nuevo estado al casting (Publicado)
+    casting_call_dict['state'] = "Publicado"
+
+    updated_casting_call = casting_call_repository.update_casting_call(casting_id, casting_call_dict)
+
+    if not updated_casting_call:
+        raise HTTPException(status_code=404, detail=f"Casting call with id {casting_id} not found.")
+
+    return updated_casting_call
+        
