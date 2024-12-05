@@ -73,6 +73,6 @@ class CastingCallPublication(BaseModel):
         
         return self
 
-class CastingCallPause(BaseModel):
+class CastingCallChangeState(BaseModel):
     title: str
     state: str
