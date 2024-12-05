@@ -5,7 +5,7 @@ from starlette import status
 from sqlalchemy.orm import Session
 import oauth2
 import models
-from schemas.casting_call import CastingCallPreviewResponse, CastingCallPublication, PublishedCastingCallResponse
+from schemas.casting_call import CastingCallPreviewResponse, CastingCallPublication, PublishedCastingCallResponse, CastingCallPause
 from repository.casting_call import CastingCallRepository
 from repository.project import ProjectRepository
 from repository.role import RoleRepository
@@ -147,6 +147,28 @@ def publish_casting_call(casting_id: int, casting_call: CastingCallPublication,
 
     #Le seteo el nuevo estado al casting (Publicado)
     casting_call_dict['state'] = "Publicado"
+
+    updated_casting_call = casting_call_repository.update_casting_call(casting_id, casting_call_dict)
+
+    if not updated_casting_call:
+        raise HTTPException(status_code=404, detail=f"Casting call with id {casting_id} not found.")
+
+    return updated_casting_call
+
+@router.patch("/stop/{casting_id}")
+def stop_casting_call(casting_id: int, casting_call: CastingCallPause, 
+                         current_user: models.User = Depends(oauth2.get_current_user), 
+                         db: Session = Depends(get_db)) -> CastingCallPause:
+    
+    if casting_call.state == "Finalizado":
+        raise HTTPException(status_code=400, detail="The casting cannot be stopped because it has already ended.")
+
+    casting_call_repository = CastingCallRepository(db)
+
+    casting_call_dict = casting_call.model_dump()
+
+    #Le seteo el nuevo estado al casting (Pausado)
+    casting_call_dict['state'] = "Pausado"
 
     updated_casting_call = casting_call_repository.update_casting_call(casting_id, casting_call_dict)
 

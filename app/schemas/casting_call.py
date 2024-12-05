@@ -72,3 +72,7 @@ class CastingCallPublication(BaseModel):
             raise ValueError(f'Expiration date must be after the current date: {today}')
         
         return self
+
+class CastingCallPause(BaseModel):
+    title: str
+    state: str
