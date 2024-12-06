@@ -14,15 +14,20 @@ def step_impl(context):
         url = settings.backend_url + "/users/"
         user_data = {field["field"]: field["value"] for field in context.table}
         user_data["password_confirmation"] = user_data["password"]
-        response = requests.post(url, json=user_data)
-        response_data = response.json()
-        user_id = response_data.get('id')
 
-        user_query = session.query(models.User).filter(models.User.id == user_id)
-        
-        # Simulacion de cuenta verificada
-        user_query.update({"is_verified": True}, synchronize_session=False)
-        session.commit()
+        # Verifica si el usuario ya existe, para no estar creando varios y usar uno solo para
+        # varios escenarios
+        existing_user = session.query(models.User).filter(models.User.email == user_data["email"]).first()
+        if not existing_user:
+            response = requests.post(url, json=user_data)
+            response_data = response.json()
+            user_id = response_data.get('id')
+
+            user_query = session.query(models.User).filter(models.User.id == user_id)
+            
+            # Simulacion de cuenta verificada
+            user_query.update({"is_verified": True}, synchronize_session=False)
+            session.commit()
 
         # Logeo con el usuario
         login_data = {
