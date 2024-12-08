@@ -97,6 +97,7 @@ def step_impl(context, project_name, role_name, template_title):
         }
         response = requests.post(url, data=casting_call_data, headers=headers)
         context.response = response
+        context.casting_call_title = casting_call_data_table["title"]
     finally:
         session.close()
 

@@ -28,11 +28,11 @@ def step_impl(context, casting_call_title):
     finally:
         session.close()
 
-@then('the casting call with the title "{casting_call_title}" should be successfully published')
-def step_impl(context, casting_call_title):
+@then('the casting call should be successfully published')
+def step_impl(context):
     session = SessionLocal()
     try:
-        casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == casting_call_title).first()
+        casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == context.casting_call_title).first()
         assert casting_call.state == "Publicado", f"Casting call is not published. Current state: {casting_call.state}"
     finally:
         session.close()
@@ -69,15 +69,16 @@ def step_impl(context, project_name, role_name, template_title):
         }
         response = requests.post(url, data=casting_call_data, headers=headers)
         context.response = response
+        context.casting_call_title = casting_call_data_table["title"]
     finally:
         session.close()
 
-@given('I publish the casting call "{casting_call_title}" with an expiration date greater than the current date')
-def step_impl(context, casting_call_title):
+@given('I publish the casting call with an expiration date greater than the current date')
+def step_impl(context):
     url = settings.backend_url + "/casting-calls/publish/{casting_id}"
     session = SessionLocal()
     try:
-        casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == casting_call_title).first()
+        casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == context.casting_call_title).first()
         publication_data = {
             "title": casting_call.title,
             "state": casting_call.state,
@@ -93,14 +94,14 @@ def step_impl(context, casting_call_title):
     finally:
         session.close()
 
-@given('I pause the casting call publication "{casting_title}"')
-def step_impl(context, casting_title):
+@given('I pause the casting call publication')
+def step_impl(context):
     url = settings.backend_url + "/casting-calls/pause/{casting_id}"
     session = SessionLocal()
     try:
-        casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == casting_title).first()
+        casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == context.casting_call_title).first()
         pause_data = {
-            "title": casting_title,
+            "title": context.casting_call_title,
             "state": casting_call.state
         }
 
@@ -133,11 +134,11 @@ def step_impl(context, casting_call_title):
     finally:
         session.close()
 
-@then('the casting call with the title "{casting_call_title}" should not be published')
-def step_impl(context, casting_call_title):
+@then('the casting call should not be published')
+def step_impl(context):
     session = SessionLocal()
     try:
-        casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == casting_call_title).first()
+        casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == context.casting_call_title).first()
         assert casting_call.state != "Publicado", f"Casting call was incorrectly published."
     finally:
         session.close()
@@ -146,12 +147,12 @@ def step_impl(context, casting_call_title):
 def step_impl(context):
     assert "Expiration date must be after the current date" in context.response.text, "Expected error message not found."
 
-@given('I finish the casting call "{casting_call_title}"')
-def step_impl(context, casting_call_title):
+@given('I finish the casting call')
+def step_impl(context):
     url = settings.backend_url + "/casting-calls/finish/{casting_id}"
     session = SessionLocal()
     try:
-        casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == casting_call_title).first()
+        casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == context.casting_call_title).first()
         publication_data = {
             "title": casting_call.title,
             "state": casting_call.state

@@ -16,7 +16,7 @@ Feature: Casting Call Publication
       | title                     | Searching Neo For Matrix 4 |
       | remuneration_type         | Remunerado |
     And I publish the casting call "Searching Neo For Matrix 4" with an expiration date greater than the current date
-    Then the casting call with the title "Searching Neo For Matrix 4" should be successfully published
+    Then the casting call should be successfully published
 
  Scenario: Successful publication of a paused casting
     Given Im logged in on the platform with my account
@@ -30,10 +30,10 @@ Feature: Casting Call Publication
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
       | remuneration_type         | Remunerado |
-    And I publish the casting call "Searching Neo For Matrix 4" with an expiration date greater than the current date
-    And I pause the casting call publication "Searching Neo For Matrix 4"
+    And I publish the casting call with an expiration date greater than the current date
+    And I pause the casting call publication
     When I publish the casting call "Searching Neo For Matrix 4" with an expiration date greater than the current date
-    Then the casting call with the title "Searching Neo For Matrix 4" should be successfully published
+    Then the casting call should be successfully published
 
   Scenario: Unsuccessful publication of a casting with expiration date less than the current date
     Given Im logged in on the platform with my account
@@ -48,7 +48,7 @@ Feature: Casting Call Publication
       | title                     | Searching Neo For Matrix 4 |
       | remuneration_type         | Remunerado |
     When I publish the casting call "Searching Neo For Matrix 4" with an expiration date less than the current date
-    Then the casting call with the title "Searching Neo For Matrix 4" should not be published
+    Then the casting call should not be published
     And the user should be notified that the expiration date must be greater than the current date
 
   Scenario: Unsuccessful publication of a paused casting with expiration date less than the current date
@@ -63,9 +63,9 @@ Feature: Casting Call Publication
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
       | remuneration_type         | Remunerado |
-    And I pause the casting call publication "Searching Neo For Matrix 4"
+    And I pause the casting call publication
     When I publish the casting call "Searching Neo For Matrix 4" with an expiration date less than the current date
-    Then the casting call with the title "Searching Neo For Matrix 4" should not be published
+    Then the casting call should not be published
     And the user should be notified that the expiration date must be greater than the current date
 
   Scenario: Unsuccessful publication of a an ended casting
@@ -80,8 +80,8 @@ Feature: Casting Call Publication
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
       | remuneration_type         | Remunerado |
-    And I publish the casting call "Searching Neo For Matrix 4" with an expiration date greater than the current date
-    And I finish the casting call "Searching Neo For Matrix 4"
+    And I publish the casting call with an expiration date greater than the current date
+    And I finish the casting call
     When I publish the casting call "Searching Neo For Matrix 4" with an expiration date greater than the current date
-    Then the casting call with the title "Searching Neo For Matrix 4" should not be published
+    Then the casting call should not be published
     And the user should be notified that the casting cannot be published because it has already ended
