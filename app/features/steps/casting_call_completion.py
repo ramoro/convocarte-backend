@@ -4,9 +4,9 @@ import models
 from environment import SessionLocal
 from config import settings
 
-@when('I pause the casting call')
+@when('I finish the casting call')
 def step_impl(context):
-    url = settings.backend_url + "/casting-calls/pause/{casting_id}"
+    url = settings.backend_url + "/casting-calls/finish/{casting_id}"
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == context.casting_call_title).first()
@@ -23,29 +23,24 @@ def step_impl(context):
     finally:
         session.close()
 
-@then('the casting call should be successfully paused')
+@then('the casting call should be successfully finished')
 def step_impl(context):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == context.casting_call_title).first()
-        assert casting_call.state == "Pausado", f"Casting call is not paused. Current state: {casting_call.state}"
+        assert casting_call.state == "Finalizado", f"Casting call is not paused. Current state: {casting_call.state}"
     finally:
         session.close()
 
-@then('the casting call should not be paused')
+@then('the casting call should not be finished')
 def step_impl(context):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == context.casting_call_title).first()
-        assert casting_call.state != "Pausado", f"Casting call was incorrectly paused."
+        assert casting_call.state != "Finalizado", f"Casting call was incorrectly finished."
     finally:
         session.close()
 
-@then("the user should be notified that the casting cannot be paused because it hasn't been published yet")
+@then("the user should be notified that the casting cannot be finished because it hasn't been published yet")
 def step_impl(context):
-    assert "casting cannot be paused because it hasn't been published yet" in context.response.text, "Expected error message not found."
-
-@then("the user should be notified that the casting cannot be paused because it has already ended")
-def step_impl(context):
-    assert "casting cannot be paused because it has already ended" in context.response.text, "Expected error message not found."
-
+    assert "casting cannot be finished because it hasn't been published yet" in context.response.text, "Expected error message not found."

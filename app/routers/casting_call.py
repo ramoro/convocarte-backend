@@ -180,7 +180,7 @@ def stop_casting_call(casting_id: int, casting_call: CastingCallChangeState,
     return updated_casting_call
 
 @router.patch("/finish/{casting_id}")
-def stop_casting_call(casting_id: int, casting_call: CastingCallChangeState, 
+def finish_casting_call(casting_id: int, casting_call: CastingCallChangeState, 
                          current_user: models.User = Depends(oauth2.get_current_user), 
                          db: Session = Depends(get_db)) -> CastingCallChangeState:
     

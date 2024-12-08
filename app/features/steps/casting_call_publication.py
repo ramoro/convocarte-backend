@@ -5,7 +5,7 @@ from environment import SessionLocal
 from config import settings
 from sqlalchemy import and_
 import json
-from datetime import date, datetime, timedelta 
+from datetime import datetime, timedelta 
 
 @when('I publish the casting call "{casting_call_title}" with an expiration date greater than the current date')
 def step_impl(context, casting_call_title):
