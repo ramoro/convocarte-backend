@@ -31,3 +31,15 @@ class CastingCallRepository:
     
     def get_casting_calls_by_user_id(self, user_id):
         return self.db.query(models.CastingCall).filter((models.CastingCall.owner_id == user_id)).all()
+    
+    def update_casting_call(self, casting_call_id, updated_casting_call):
+        casting_call_query = self.db.query(models.CastingCall).filter(models.CastingCall.id == casting_call_id)
+
+        if not casting_call_query.first():
+            return None
+
+        casting_call_query.update(updated_casting_call, synchronize_session=False)
+        self.db.commit()
+    
+        # Retornar el registro actualizado
+        return casting_call_query.first()

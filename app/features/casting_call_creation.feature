@@ -1,13 +1,13 @@
 Feature: Casting Call Creation
   As a casting director
   I want to be able to create a casting associated with my project
-  So that other artists can apply, allowing me to evaluate them
+  So I can publish it when I decide to start my artists search for my project
 
   Scenario: Successful Casting Call creation
     Given Im logged in on the platform with my account
     | field                | value                |
     | fullname             | Frodo Bolson         |
-    | email                | frodo123@example.com |
+    | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
     And I have a form template with title "Form for Matrix"
     And I have a project with name "Matrix 4" and an associated role called "Neo"
@@ -21,7 +21,7 @@ Feature: Casting Call Creation
     Given Im logged in on the platform with my account
     | field                | value                |
     | fullname             | Frodo Bolson         |
-    | email                | frodo123@example.com |
+    | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
     And I have a project with name "Matrix 4" and an associated role called "Neo"
     When I create a casting call for the project "Matrix 4" without associating any roles to it
@@ -35,7 +35,7 @@ Feature: Casting Call Creation
     Given Im logged in on the platform with my account
     | field                | value                |
     | fullname             | Frodo Bolson         |
-    | email                | frodo1234@example.com |
+    | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
     And I have a project with name "Matrix 4" and an associated role called "Neo"
     When I create a casting call associating the role "Neo" without assigning a form template to it

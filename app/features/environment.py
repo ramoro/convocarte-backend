@@ -30,8 +30,22 @@ def after_scenario(context, scenario):
     """Limpieza después de cada escenario."""
     # No alcanza con el delete on cascade, asi que se eliminan estas tablas
     # en este orden para que no haya problemas de foreign key
-    context.database.query(models.RoleByCastingCall).delete()
-    context.database.query(models.CastingCall).delete()
-    context.database.query(models.Role).delete()
-    context.database.commit()
-    context.database.close()
+    session = context.database
+
+    try:
+        # Truncar las tablas en orden correcto para evitar conflictos de claves foráneas
+        # No se borra la tabla de usuarios para no estar creando a cada rato el mismo usuario
+        # Total siempre se va a necesitar un usuario creado
+        session.execute("TRUNCATE TABLE roles_by_casting_calls CASCADE;")
+        session.execute("TRUNCATE TABLE casting_calls CASCADE;")
+        session.execute("TRUNCATE TABLE roles CASCADE;")
+        session.execute("TRUNCATE TABLE projects CASCADE;")
+        session.execute("TRUNCATE TABLE form_templates CASCADE;")
+        
+        # Confirmar los cambios
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
