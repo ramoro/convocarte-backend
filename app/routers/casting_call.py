@@ -161,7 +161,7 @@ def stop_casting_call(casting_id: int, casting_call: CastingCallChangeState,
                          db: Session = Depends(get_db)) -> CastingCallChangeState:
     
     if casting_call.state == "Finalizado":
-        raise HTTPException(status_code=400, detail="The casting cannot be stopped because it has already ended.")
+        raise HTTPException(status_code=400, detail="The casting cannot be paused because it has already ended.")
     elif casting_call.state == "Borrador":
         raise HTTPException(status_code=400, detail="The casting cannot be paused because it hasn't been published yet.")
 
