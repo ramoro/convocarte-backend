@@ -155,13 +155,15 @@ def publish_casting_call(casting_id: int, casting_call: CastingCallPublication,
 
     return updated_casting_call
 
-@router.patch("/stop/{casting_id}")
+@router.patch("/pause/{casting_id}")
 def stop_casting_call(casting_id: int, casting_call: CastingCallChangeState, 
                          current_user: models.User = Depends(oauth2.get_current_user), 
                          db: Session = Depends(get_db)) -> CastingCallChangeState:
     
     if casting_call.state == "Finalizado":
         raise HTTPException(status_code=400, detail="The casting cannot be stopped because it has already ended.")
+    elif casting_call.state == "Borrador":
+        raise HTTPException(status_code=400, detail="The casting cannot be paused because it hasn't been published yet.")
 
     casting_call_repository = CastingCallRepository(db)
 
