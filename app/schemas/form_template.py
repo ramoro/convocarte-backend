@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel
 from typing import List
+from typing import Optional
 
 class FormTemplateField(BaseModel):
     title: str
@@ -21,7 +22,7 @@ class FormTemplateResponse(BaseModel):
 class FormTemplateWithFields(BaseModel):
     id: int
     form_template_title: str
-    created_at: datetime
+    created_at: Optional[datetime] = None
     form_template_fields: List[FormTemplateField]
     
 class UpdateFormTemplate(FormTemplateWithFields):
