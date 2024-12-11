@@ -110,6 +110,3 @@ class FormTemplateRepository:
             self.db.rollback()  # Rollbackea si algo falla
             print(f"Error occurred: {e}") 
             return None, "Database Error"
-
-        
-

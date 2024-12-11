@@ -23,11 +23,13 @@ def create_form_template(form_template: CreateFormTemplate,
     if form_template_repository.get_form_template_by_user_id_and_title(current_user.id, form_template.form_template_title):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The user already has a form template with the title " + form_template.form_template_title)
 
-    if not form_template_repository.add_new_form_template(current_user.id, form_template.form_template_title, "Sin Uso", form_template.form_template_fields):
+    #Se crea el form template en estado "Sin Uso"
+    new_form_template = form_template_repository.add_new_form_template(current_user.id, form_template.form_template_title, "Sin Uso", form_template.form_template_fields)
+    if not new_form_template:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while creating the form template")
     
     return {'success': True, 'status_code': status.HTTP_201_CREATED,
-            'form_template_title': form_template.form_template_title }
+            'form_template_title': form_template.form_template_title, 'id': new_form_template.id }
 
 @router.get("/", response_model=List[FormTemplateResponse])
 def get_user_form_templates(current_user: models.User = Depends(oauth2.get_current_user), 
@@ -77,9 +79,9 @@ def update_form_template(form_template: UpdateFormTemplate, current_user: models
     template_form = form_template_repository.get_form_template_by_user_id_and_title(current_user.id, form_template.form_template_title)
 
     #Si existe un form con ese titulo y el titulo no es el mismo que el que ya tenia antes (es decir que es un titulo nuevo), entonces
-    # significa que esta repitiendo el titulo de otro form que ya tiene el usuario
+    #significa que esta repitiendo el titulo de otro form que ya tiene el usuario
     if template_form and form_template.form_template_title != form_template.original_form_template_title:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The user already has a form template with that title")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The user already has a form template with the title " + form_template.form_template_title)
 
     updated_form, error = form_template_repository.update_form_template(form_template)
 
@@ -90,5 +92,4 @@ def update_form_template(form_template: UpdateFormTemplate, current_user: models
             raise HTTPException(status_code=500, detail=f"Internal Server Error")
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
 
