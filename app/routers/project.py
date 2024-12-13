@@ -27,7 +27,7 @@ def project_has_roles_with_same_name(roles):
     return False
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-def create_form_template(new_project: CreateProject, 
+def create_project(new_project: CreateProject, 
                 current_user: models.User = Depends(oauth2.get_current_user), 
                 db: Session = Depends(get_db)):
     
@@ -44,11 +44,13 @@ def create_form_template(new_project: CreateProject,
     if project_has_roles_with_same_name(roles):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The project has two roles with the same name")
 
-    if not project_repository.add_new_project(dict_project, roles):
+    new_project = project_repository.add_new_project(dict_project, roles)
+
+    if not new_project:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while creating the project")
     
     return {'success': True, 'status_code': status.HTTP_201_CREATED,
-            'project_name': new_project.name  }
+            'project_name': new_project.name, 'id': new_project.id  }
 
 @router.get("/", response_model=List[ProjectResponse])
 def get_user_projects(current_user: models.User = Depends(oauth2.get_current_user), 
