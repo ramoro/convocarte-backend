@@ -85,3 +85,24 @@ Feature: Casting Call Publication
     When I publish the casting call "Searching Neo For Matrix 4" with an expiration date greater than the current date
     Then the casting call should not be published
     And the user should be notified that the casting cannot be published because it has already ended
+
+  Scenario: Unsuccessful publication of a casting with a title already used by other published casting
+    Given a user that has a published casting with title "Searching Neo For Matrix 4"
+      | field                | value               |
+      | fullname             | Albus Dumbledore    |
+      | email                | albus@bigwizard.com |
+      | password             | Albus123*           |
+    And Im logged in on the platform with my account
+      | field                | value                |
+      | fullname             | Frodo Bolson         |
+      | email                | frodohobbit@lord.com |
+      | password             | Frodo123*            |
+    And I have a form template with title "Form for Matrix"
+    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
+      | field                     | value                      |
+      | title                     | Searching Neo For Matrix 4 |
+      | remuneration_type         | Remunerado |
+    When I publish the casting call "Searching Neo For Matrix 4" with an expiration date greater than the current date
+    Then the casting call should not be published
+    And the user should be notified that there is already a published casting with the title "Searching Neo For Matrix 4"

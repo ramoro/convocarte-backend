@@ -43,3 +43,12 @@ class CastingCallRepository:
     
         # Retornar el registro actualizado
         return casting_call_query.first()
+    
+    def get_casting_call_by_title_and_state(self, casting_call_title, state):
+        
+        return self.db.query(models.CastingCall).filter(and_(
+            models.CastingCall.title == casting_call_title,
+            models.CastingCall.state == state
+        )).first()
+        
+

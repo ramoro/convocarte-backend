@@ -140,6 +140,11 @@ def publish_casting_call(casting_id: int, casting_call: CastingCallPublication,
 
     casting_call_repository = CastingCallRepository(db)
 
+    #Se valida que no exista un casting publicado con el mismo nombre
+    existing_published_casting = casting_call_repository.get_casting_call_by_title_and_state(casting_call.title, "Publicado")
+    if existing_published_casting:
+        raise HTTPException(status_code=400, detail=f"The casting cannot be published because there is already a published casting with the title {casting_call.title}")
+
     #Le seteo la fecha de publicacion con la fecha actual
     casting_call_dict = casting_call.model_dump()
     argentina_tz = pytz.timezone('America/Argentina/Buenos_Aires')
