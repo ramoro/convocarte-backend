@@ -30,6 +30,9 @@ router = APIRouter(
     tags=["CastingCalls"]
 )
 
+# El str de la lista casting_roles vendra de la forma:
+# {"role_id":1,"form_template_id":1,"min_age_required":25,"max_age_required":35,"additional_requirements":"",
+# "has_limited_spots":false}
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_casting_call(title: str = Form(...),
                         description: str = Form(None),
@@ -66,9 +69,15 @@ async def create_casting_call(title: str = Form(...),
         #Validacion de ids existentes en la bdd
         if not role_repository.get_role_by_id(role["role_id"]):
             raise HTTPException(status_code=404, detail=f"Role with id {role['role_id']} not found.")
-        if not form_template_repository.get_form_template_by_id(role["form_template_id"]):
+        form_template = form_template_repository.get_form_template_by_id(role["form_template_id"])
+
+        if not form_template:
             raise HTTPException(status_code=404, detail=f"Form template with id {role['form_template_id']} not found.")
         
+        # Agregamos al diccionario con la info del rol el modelo de Form Template para que despues se use para crear
+        # el Form con su misma info.
+        role["form_template"] = form_template
+        role.pop("form_template_id")
         roles_list.append(role)
 
     #Almacenamiento de fotos y armado de string con nombres generados en hexa para las fotos

@@ -120,7 +120,6 @@ class FormTemplate(Base):
 
     # Definela relación con FormTemplateField
     form_template_fields = relationship("FormTemplateField", back_populates="form_template")
-    #TODO: Luego se agregara el rol_id, es decir el rol al que esta asociado el formulario. QUIZAS NO
 
 class FormTemplateField(Base):
     __tablename__ = "form_template_fields"
@@ -179,11 +178,39 @@ class CastingCall(Base):
     state = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
+class Form(Base):
+    __tablename__ = "forms"
+    id = Column(Integer, primary_key=True, nullable=False)
+    #Seran las PK role_id y casting_Call_id. Asi identifico de forma unica cada form
+    role_id = Column(Integer, ForeignKey('roles.id', ondelete="CASCADE"), nullable=False)
+    casting_call_id = Column(Integer, ForeignKey('casting_calls.id', ondelete="CASCADE"), nullable=False)
+    form_title = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    deleted_at = Column(TIMESTAMP(timezone=True))
+
+    # Define la relación con FormField
+    form_fields = relationship("FormField", back_populates="form")
+
+class FormField(Base):
+    __tablename__ = "form_fields"
+    id = Column(Integer, primary_key=True, nullable=False)
+    form_id = Column(Integer, ForeignKey('forms.id', ondelete="CASCADE"), nullable=False)
+    title = Column(String, nullable=False)
+    type = Column(String, nullable=False) 
+    order = Column(Integer, nullable=False)
+    is_required = Column(Boolean, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    deleted_at = Column(TIMESTAMP(timezone=True))
+
+    # Define la relación inversa
+    form = relationship("Form", back_populates="form_fields")
+
+
 class RoleByCastingCall(Base):
     __tablename__ = "roles_by_casting_calls"
     id = Column(Integer, primary_key=True, nullable=False)
     role_id = Column(Integer, ForeignKey('roles.id', ondelete="CASCADE"), nullable=False)
-    form_template_id = Column(Integer, ForeignKey('form_templates.id', ondelete="CASCADE"), nullable=False)
+    form_id = Column(Integer, ForeignKey('forms.id', ondelete="CASCADE"), nullable=False)
     casting_call_id = Column(Integer, ForeignKey('casting_calls.id', ondelete="CASCADE"), nullable=False)
     min_age_required = Column(Integer)
     max_age_required = Column(Integer)
@@ -193,6 +220,8 @@ class RoleByCastingCall(Base):
     additional_requirements = Column(String)
     has_limited_spots = Column(Boolean, nullable=False)
     spots_amount = Column(Integer)
+
+
     
 
 

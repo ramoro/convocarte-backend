@@ -8,14 +8,46 @@ class CastingCallRepository:
         self.db = db
 
     def add_new_casting_call(self, casting_call, casting_roles):
+        """Recibe un diccionario con los datos del casting y otro diccionario con
+        los datos del rol junto a el Form Template que se usara para generar el Form y sus 
+        Fields que tendra el rol para que se pueda aplicar a el. Almacena para cada Rol
+        el Form y sus Form Fields generados, junto con la relacion que se establece entre el rol, el casting y 
+        el template en la tabla RoleByCastingCall. Y se crea tambien el casting. Se devuelve la instancia generada
+        para esta entidad."""
         try:
+            #Se crea Casting Call
             new_casting_call = models.CastingCall(**casting_call) 
 
             self.db.add(new_casting_call)
             self.db.flush() #Asi ya la variable se actualiza con el id generado para el casting
 
+            #Por cada rol se crea un Form y sus FormFields a partir de un Form Template
+            #Y luego se agrega la realacion a RoleByCastingCall
             for role in casting_roles:
+                form_template_associated = role['form_template']
+                #Se crea primero el Form y
+                form = models.Form(role_id=role['role_id'], 
+                                casting_call_id=new_casting_call.id, 
+                                form_title=form_template_associated.form_template_title)
+                self.db.add(form)
+                self.db.flush()
+
+                for template_field in form_template_associated.form_template_fields:
+                    form_field = models.FormField(
+                        form_id=form.id,
+                        title=template_field.title,
+                        type=template_field.type,
+                        order=template_field.order,
+                        is_required=template_field.is_required
+                    )
+                    self.db.add(form_field)
+                    self.db.flush()
+
                 role['casting_call_id'] = new_casting_call.id
+                #Sacamos el modelo de form template del diccionario y le agregamos el id
+                #del form generado
+                role.pop('form_template') 
+                role['form_id'] = form.id
 
                 new_role = models.RoleByCastingCall(**role)
                 self.db.add(new_role)
