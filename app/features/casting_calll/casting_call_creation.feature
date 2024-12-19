@@ -16,6 +16,7 @@ Feature: Casting Call Creation
       | title                     | Searching Neo For Matrix 4 |
       | remuneration_type         | Remunerado |
     Then a casting call with the title "Searching Neo For Matrix 4" should be created successfully as draft
+    And a form should be created successfully for the casting role with the same title and same fields that the form template "Form for Matrix"
 
   Scenario: Unsuccessful casting call creation without roles associated
     Given Im logged in on the platform with my account

@@ -4,6 +4,7 @@ import models
 from environment import SessionLocal
 from config import settings
 from sqlalchemy import and_
+from sqlalchemy.orm import joinedload
 import json
 from datetime import datetime, timedelta
 
@@ -113,6 +114,19 @@ def step_impl(context, casting_call_title):
         casting_call = context.database.query(models.CastingCall).filter(models.CastingCall.title == casting_call_title).first()
         assert casting_call is not None, f"Casting call with title {casting_call_title} was not created"
         assert casting_call.state == "Borrador", f"Casting call was not created as draft"
+    finally:
+        session.close()
+
+@then('a form should be created successfully for the casting role with the same title and same fields that the form template "{form_title}"')
+def step_impl(context, form_title):
+    session = SessionLocal()
+    try:
+        form = context.database.query(models.Form).filter(and_(
+                models.Form.form_title == form_title,
+                models.Form.casting_call_id == context.casting_call_id
+        )).options(joinedload(models.Form.form_fields)).first()
+        assert form is not None, f"Form with title {form_title} was not created"
+        assert len(form.form_fields) > 0, f"Form with title {form_title} has no form fields created"
     finally:
         session.close()
 
