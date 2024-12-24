@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Numeric
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Numeric, Table
 from database import Base
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP, Date
@@ -150,6 +150,9 @@ class Project(Base):
 
     # Define la relación con Roles
     roles = relationship("Role", back_populates="project")
+    #Define la relacion con los castings
+    casting_calls = relationship("CastingCall", back_populates="project", cascade="all, delete-orphan") 
+
 
 class Role(Base):
     __tablename__ = "roles"
@@ -162,6 +165,8 @@ class Role(Base):
 
     # Define la relación inversa con el proyecto al que esta asociado
     project = relationship("Project", back_populates="roles")
+    # Relación inversa con ExposedRole
+    exposed_roles = relationship("ExposedRole", back_populates="role")
 
 class CastingCall(Base):
     __tablename__ = "casting_calls"
@@ -177,6 +182,11 @@ class CastingCall(Base):
     casting_photos = Column(String)
     state = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    project = relationship("Project", back_populates="casting_calls")  # Relación con la tabla Project
+
+    # Relación inversa con ExposedRole
+    exposed_roles = relationship("ExposedRole", back_populates="casting_call")
+
 
 class Form(Base):
     __tablename__ = "forms"
@@ -190,6 +200,8 @@ class Form(Base):
 
     # Define la relación con FormField
     form_fields = relationship("FormField", back_populates="form")
+    # Relación inversa con ExposedRole
+    exposed_roles = relationship("ExposedRole", back_populates="form")
 
 class FormField(Base):
     __tablename__ = "form_fields"
@@ -205,13 +217,13 @@ class FormField(Base):
     # Define la relación inversa
     form = relationship("Form", back_populates="form_fields")
 
-
-class RoleByCastingCall(Base):
-    __tablename__ = "roles_by_casting_calls"
+class ExposedRole(Base):
+    __tablename__ = "exposed_roles"
     id = Column(Integer, primary_key=True, nullable=False)
+    casting_call_id = Column(Integer, ForeignKey('casting_calls.id', ondelete="CASCADE"), nullable=False)
     role_id = Column(Integer, ForeignKey('roles.id', ondelete="CASCADE"), nullable=False)
     form_id = Column(Integer, ForeignKey('forms.id', ondelete="CASCADE"), nullable=False)
-    casting_call_id = Column(Integer, ForeignKey('casting_calls.id', ondelete="CASCADE"), nullable=False)
+
     min_age_required = Column(Integer)
     max_age_required = Column(Integer)
     min_height_required = Column(Integer)
@@ -221,8 +233,9 @@ class RoleByCastingCall(Base):
     has_limited_spots = Column(Boolean, nullable=False)
     spots_amount = Column(Integer)
 
-
-    
+    casting_call = relationship("CastingCall", back_populates="exposed_roles")  # Relación con CastingCall
+    role = relationship("Role", back_populates="exposed_roles")  # Relación con Role
+    form = relationship("Form", back_populates="exposed_roles")  # Relación con Form
 
 
 

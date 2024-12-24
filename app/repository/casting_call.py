@@ -1,5 +1,5 @@
 import models
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, subqueryload
 from sqlalchemy import and_
 
 class CastingCallRepository:
@@ -48,8 +48,8 @@ class CastingCallRepository:
                 #del form generado
                 role.pop('form_template') 
                 role['form_id'] = form.id
-
-                new_role = models.RoleByCastingCall(**role)
+                print(role)
+                new_role = models.ExposedRole(**role)
                 self.db.add(new_role)
 
             self.db.commit()
@@ -82,5 +82,24 @@ class CastingCallRepository:
             models.CastingCall.title == casting_call_title,
             models.CastingCall.state == state
         )).first()
+    
+    def get_casting_call_by_id(self, casting_call_id):
+        """Recibe el id de un casting y devuelve toda su informacion, junto con la info de cada
+        rol asociado y cada form adjudicado a cada rol, y junto al projecto que tiene asociado"""
+        casting_call = (
+            self.db.query(models.CastingCall)
+            .filter(models.CastingCall.id == casting_call_id)
+            .options(
+                joinedload(models.CastingCall.project),
+                joinedload(models.CastingCall.exposed_roles)
+                .joinedload(models.ExposedRole.role),  # Cargar el role de cada exposed role
+                joinedload(models.CastingCall.exposed_roles)
+                .joinedload(models.ExposedRole.form)   # Cargar el form de cada exposed role
+            )  
+            .first()
+        )
+    
+        return casting_call
+
         
 

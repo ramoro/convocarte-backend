@@ -5,7 +5,7 @@ from starlette import status
 from sqlalchemy.orm import Session
 import oauth2
 import models
-from schemas.casting_call import CastingCallPreviewResponse, CastingCallPublication, PublishedCastingCallResponse, CastingCallChangeState
+from schemas.casting_call import CastingCallPreviewResponse, CastingCallPublication, PublishedCastingCallResponse, CastingCallChangeState, CastingCallResponse
 from repository.casting_call import CastingCallRepository
 from repository.project import ProjectRepository
 from repository.role import RoleRepository
@@ -29,6 +29,22 @@ router = APIRouter(
     prefix="/casting-calls", 
     tags=["CastingCalls"]
 )
+
+def add_path_to_photo(casting_call):
+    """Recibe un casting y si tiene fotos le agrega el path correspondiente para poder acceder desde el front.
+    El path varia si se esta corriendo local, o si se esta corriendo en produccion (ahi usa paths de google drive)"""
+    if casting_call.casting_photos:
+        #Si es corrida local uso el path local, sino la url para descargar desde google drive
+        if "localhost" in settings.backend_url:
+            #Se hace un split y se le agrega a cada photo el path donde se ubica localmente
+            photos_with_paths = list(map(lambda photo_name : settings.backend_url + settings.casting_call_photos_path[1:] + photo_name, casting_call.casting_photos.split(",")))
+        else:
+            #Para el caso de google drive, se saca la extension de la foto, quedando solo el nombre, que es el id que tiene en el google drive
+            photos_with_paths = list(map(lambda photo_name : CLOUD_STORAGE_URL + photo_name.split('.')[0], casting_call.casting_photos.split(",")))
+        
+        casting_call.casting_photos = photos_with_paths
+    else:
+        casting_call.casting_photos = []
 
 # El str de la lista casting_roles vendra de la forma:
 # {"role_id":1,"form_template_id":1,"min_age_required":25,"max_age_required":35,"additional_requirements":"",
@@ -124,18 +140,7 @@ def get_user_casting_calls(current_user: models.User = Depends(oauth2.get_curren
     my_casting_calls = casting_call_repository.get_casting_calls_by_user_id(current_user.id)
 
     for casting_call in my_casting_calls:
-        if casting_call.casting_photos:
-            #Si es corrida local uso el path local, sino la url para descargar desde google drive
-            if "localhost" in settings.backend_url:
-                #Se hace un split y se le agrega a cada photo el path donde se ubica localmente
-                photos_with_paths = list(map(lambda photo_name : settings.backend_url + settings.casting_call_photos_path[1:] + photo_name, casting_call.casting_photos.split(",")))
-            else:
-                #Para el caso de google drive, se saca la extension de la foto, quedando solo el nombre, que es el id que tiene en el google drive
-                photos_with_paths = list(map(lambda photo_name : CLOUD_STORAGE_URL + photo_name.split('.')[0], casting_call.casting_photos.split(",")))
-            
-            casting_call.casting_photos = photos_with_paths
-        else:
-            casting_call.casting_photos = []
+        add_path_to_photo(casting_call)
     
     return my_casting_calls
 
@@ -214,4 +219,18 @@ def finish_casting_call(casting_id: int, casting_call: CastingCallChangeState,
         raise HTTPException(status_code=404, detail=f"Casting call with id {casting_id} not found.")
 
     return updated_casting_call
-        
+
+@router.get("/{casting_id}")
+def get_casting_call(casting_id: int, current_user: models.User = Depends(oauth2.get_current_user), 
+                        db: Session = Depends(get_db)) -> CastingCallResponse:
+    
+    casting_call_repository = CastingCallRepository(db)
+
+    casting_call = casting_call_repository.get_casting_call_by_id(casting_id)
+
+    if not casting_call:
+        raise HTTPException(status_code=404, detail=f"Casting call with id {casting_id} not found.")
+    
+    add_path_to_photo(casting_call)
+    
+    return casting_call
