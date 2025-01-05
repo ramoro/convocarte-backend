@@ -507,9 +507,7 @@ def step_impl(context, other_casting_title):
         headers = {
             "Authorization": f"Bearer {token}"
         }
-        print("ESTO")
-        print(url)
-        print(publication_data)
+
         response = requests.patch(url, json=publication_data, headers=headers)
 
     finally:
@@ -518,3 +516,76 @@ def step_impl(context, other_casting_title):
 @then('the user should be notified that there is already a published casting with the title "{casting_title}"')
 def step_impl(context, casting_title):
     assert f"there is already a published casting with the title {casting_title}" in context.response.text, "Expected error message not found."
+
+@when('I edit the casting call "{current_casting_title}" with the title "{new_casting_title}" and its role "{role_name}" with minimum age requirement "{min_age_required}"')
+def step_impl(context, current_casting_title, new_casting_title, role_name, min_age_required):
+    url = settings.backend_url + "/casting-calls/{casting_id}"
+    session = SessionLocal()
+    try:
+        casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
+        project = session.query(models.Project).filter(models.Project.id == casting_call.project_id).first()
+        role = session.query(models.Role).filter(and_(
+                models.Role.project_id == project.id,
+                models.Role.name == role_name
+        )).first()
+        exposed_role = next((exposed_role for exposed_role in casting_call.exposed_roles if exposed_role.role_id == role.id), None)
+        casting_call_data = {
+        "casting_state": casting_call.state,
+        "title": new_casting_title,
+        "project_id": project.id,
+        "remuneration_type":  casting_call.remuneration_type,
+        "casting_roles": json.dumps(  # Enviar los roles como un array de objetos JSON
+                {
+                    "id": exposed_role.id,
+                    "role_id": role.id,
+                    "has_limited_spots": False,
+                    "min_age_required":  min_age_required
+                }
+            )
+        }
+
+        headers = {
+            "Authorization": f"Bearer {context.token}"
+        }
+        response = requests.patch(url.format(casting_id=casting_call.id), data=casting_call_data, headers=headers)
+        context.response = response
+        context.updated_role_id = role.id
+    finally:
+        session.close()
+
+@then('the casting call should be successfully updated with the title "{new_casting_title}" and its role "{role_name}" should have a minimum age requirement of "{min_age_required}"')
+def step_impl(context, new_casting_title, role_name, min_age_required):
+    session = SessionLocal()
+    try:
+        casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
+        #filtrar el rol con el id igual al updated_role_id del contexto
+        print(context.updated_role_id)
+        updated_exposed_role = casting_call.exposed_roles[0]
+        
+        assert casting_call.title == new_casting_title, f"Casting call was not updated."
+        assert updated_exposed_role.min_age_required == int(min_age_required), f"Casting call role was not updated."
+    finally:
+        session.close()
+
+@then('the casting call should not be successfully updated with the title "{new_casting_title_failed}" and its role "{role_name}" with minimum age requirement "{min_age_required}"')
+def step_impl(context, new_casting_title_failed, role_name, min_age_required):
+    session = SessionLocal()
+    try:
+        casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
+        
+        updated_exposed_role = casting_call.exposed_roles[0]        
+        assert casting_call.title != new_casting_title_failed, f"Casting call was incorrectly updated."
+        assert updated_exposed_role.min_age_required != int(min_age_required), f"Casting call role was incorrectly updated."
+    finally:
+        session.close()
+
+@then('the user should be notified that the casting must be paused to be updated')
+def step_impl(context):
+    print(context.response.text)
+    assert f"casting must be paused to be updated" in context.response.text, "Expected error message not found."
+
+@then('the user should be notified that the casting has finished and cant be edited')
+def step_impl(context):
+    assert f"casting has finished and cant be edited" in context.response.text, "Expected error message not found."
+
+
