@@ -223,6 +223,7 @@ class ExposedRole(Base):
     casting_call_id = Column(Integer, ForeignKey('casting_calls.id', ondelete="CASCADE"), nullable=False)
     role_id = Column(Integer, ForeignKey('roles.id', ondelete="CASCADE"), nullable=False)
     form_id = Column(Integer, ForeignKey('forms.id', ondelete="CASCADE"), nullable=False)
+    disabled = Column(Boolean, nullable=False, default=False)
 
     min_age_required = Column(Integer)
     max_age_required = Column(Integer)
