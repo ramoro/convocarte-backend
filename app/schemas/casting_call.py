@@ -6,7 +6,7 @@ import pytz
 from dateutil import parser
 
 
-class CastingCallRole(BaseModel):
+class CastingCallExposedRoleInfo(BaseModel):
     role_id: int
     min_age_required: Optional[int] = None
     max_age_required: Optional[int] = None
@@ -16,6 +16,7 @@ class CastingCallRole(BaseModel):
     additional_requirements: Optional[str] = None
     has_limited_spots: bool
     spots_amount: Optional[int] = None
+    disabled: bool
 
 #class CastingCallRoleCreation(CastingCallRole):
 #    form_template_id: int #Para la creacion se usa form_template_id, luego al crearse el casting ya se crea un form para el rol dentro del casting
@@ -94,11 +95,13 @@ class ExposedRoleRoleData(BaseModel):
     id: int
     name: str
 
-class CastingCallExposedRole(CastingCallRole):
+class CastingCallExposedRole(CastingCallExposedRoleInfo):
+    id: int
     form: ExposedRoleForm
     role: ExposedRoleRoleData
 
 class CastingCallResponse(CastingCallPreviewResponse):
     description: Optional[str] = None
+    state: str
     project: CastingCallProject
     exposed_roles: List[CastingCallExposedRole]

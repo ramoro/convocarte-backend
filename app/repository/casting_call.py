@@ -48,7 +48,6 @@ class CastingCallRepository:
                 #del form generado
                 role.pop('form_template') 
                 role['form_id'] = form.id
-                print(role)
                 new_role = models.ExposedRole(**role)
                 self.db.add(new_role)
 
@@ -101,5 +100,42 @@ class CastingCallRepository:
     
         return casting_call
 
-        
+    def update_casting_call_with_exposed_roles(self, casting_call_id, updated_casting_call, updated_roles, 
+                                               deleted_photos_names, new_photos_names):
+        """Recibe el id de un casting, un diccionario con los datos actualizados del casting, la lista de los roles 
+        expuestos actualizados (cada uno es un diccionario con su data), una lista con los nombres de las fotos eliminadas 
+        (y sus extensiones) y otra con los nombres de las nuevas fotos generadas. Actualiza el casting y sus roles expuestos 
+        asociados. Devuelve el casting actualizado, o None si no se encontro un casting con el id recibido."""
 
+        try:
+            # Obtener el casting existente
+            casting_call_query = self.db.query(models.CastingCall).filter(models.CastingCall.id == casting_call_id)
+            current_casting_call = casting_call_query.first()
+            if not current_casting_call:
+                return None, f"Casting call with id {casting_call_id} not found." 
+
+            #Obtiene del casting actual las fotos, elimina las correspondientes y agrega las nuevas
+            separated_casting_photos = []
+            if current_casting_call.casting_photos: 
+                separated_casting_photos = separated_casting_photos = current_casting_call.casting_photos.split(',')
+
+            for photo in deleted_photos_names:
+                separated_casting_photos.remove(photo)
+            
+            for photo in new_photos_names:
+                if photo: separated_casting_photos.append(photo)
+
+            updated_casting_call['casting_photos'] = ','.join(separated_casting_photos)
+            casting_call_query.update(updated_casting_call, synchronize_session=False)
+
+            #Actualiza los roles expuestos
+            for role in updated_roles:
+                self.db.query(models.ExposedRole).filter(models.ExposedRole.id == role['id']).update(role, synchronize_session=False)
+
+            self.db.commit()
+            return updated_casting_call, ""
+        
+        except Exception as e:
+            self.db.rollback()  # Rollbackea si algo falla
+            print(f"Error occurred: {e}") 
+            return None, "Database Error"
