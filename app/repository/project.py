@@ -53,5 +53,6 @@ class ProjectRepository:
     
     def get_project_by_id(self, project_id):
         return self.db.query(models.Project).filter((models.Project.id == project_id)).first()
+    
 
 

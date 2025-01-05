@@ -36,11 +36,12 @@ def after_scenario(context, scenario):
         # Truncar las tablas en orden correcto para evitar conflictos de claves foráneas
         # No se borra la tabla de usuarios para no estar creando a cada rato el mismo usuario
         # Total siempre se va a necesitar un usuario creado
-        session.execute("TRUNCATE TABLE roles_by_casting_calls CASCADE;")
+        session.execute("TRUNCATE TABLE exposed_roles CASCADE;")
         session.execute("TRUNCATE TABLE casting_calls CASCADE;")
         session.execute("TRUNCATE TABLE roles CASCADE;")
         session.execute("TRUNCATE TABLE projects CASCADE;")
         session.execute("TRUNCATE TABLE form_templates CASCADE;")
+        session.execute("TRUNCATE TABLE forms CASCADE;")
         
         # Confirmar los cambios
         session.commit()
