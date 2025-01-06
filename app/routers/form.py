@@ -7,6 +7,7 @@ import oauth2
 import models
 from schemas.form import FormWithFields
 from repository.form import FormRepository
+from repository.casting_call import CastingCallRepository
 
 router = APIRouter(
     prefix="/forms", 
@@ -28,18 +29,30 @@ def get_form(form_id: int, current_user: models.User = Depends(oauth2.get_curren
     return form
 
 @router.put("/", status_code=status.HTTP_204_NO_CONTENT)
-def update_form(form: FormWithFields, current_user: models.User = 
+def update_form(updated_form: FormWithFields, current_user: models.User = 
                 Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
     
     form_repository = FormRepository(db)
+    casting_call_repository = CastingCallRepository(db)
 
-    updated_form, error = form_repository.update_form(form)
+    form = form_repository.get_form_by_id(updated_form.id)
 
-    if not updated_form:
-        if error == "Not Found Error":
-            raise HTTPException(status_code=404, detail=f"Form with id {form.id} not found.")
-        else:
-            raise HTTPException(status_code=500, detail=f"Internal Server Error")
+    if not form:
+        raise HTTPException(status_code=404, detail=f"Form with id {updated_form.id} not found.")
+    
+    #Valida que el form no pertenezca a un casting publicado o finalizado
+    casting_call = casting_call_repository.get_casting_call_by_id(form.casting_call_id)
+    casting_state = casting_call.state
+
+    if casting_state == "Publicado":
+        raise HTTPException(status_code=400, detail="The form cant be updated cause its casting call is published. Pause it to update the form.")
+    if casting_state == "Finalizado":
+        raise HTTPException(status_code=400, detail="The form cant be updated cause its casting call has finished.")
+
+    result = form_repository.update_form(form, updated_form)
+
+    if not result:
+        raise HTTPException(status_code=500, detail=f"Internal Server Error")
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

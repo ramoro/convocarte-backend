@@ -104,6 +104,7 @@ def step_impl(context, project_name, role_name, template_title):
         context.response = response
         context.responsejson = response.json()
         context.casting_call_id = context.responsejson["casting_call_id"]
+        context.role_id = role.id
     finally:
         session.close()
 
@@ -259,6 +260,7 @@ def step_impl(context, project_name, role_name, template_title):
         context.response = response
         context.responsejson = response.json()
         context.casting_call_id = context.responsejson["casting_call_id"]
+        context.role_id = role.id
     finally:
         session.close()
 
