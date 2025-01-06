@@ -264,8 +264,6 @@ async def update_casting_call(casting_id: int,
     if casting_state == "Finalizado":
         raise HTTPException(status_code=400, detail="The casting has finished and cant be edited.")
 
-
-
     if not added_casting_call_photos: added_casting_call_photos = []
     if not deleted_casting_call_photos or deleted_casting_call_photos == '""': #Puede llegar a venir con un str que es ""
         deleted_casting_call_photos = []

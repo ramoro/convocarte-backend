@@ -24,23 +24,16 @@ class FormRepository:
                 models.Form.form_title == title
             )).first()
 
-    def update_form(self, form_data):
+    def update_form(self, form, new_form_data):
         try:
-
-            # Obtener el form existente
-            form = self.db.query(models.Form).filter(models.Form.id == form_data.id).first()
-
-            if not form:
-                return None, "Not Found Error" 
-
             # Actualizar titulo del form
-            form.form_title = form_data.form_title
+            form.form_title = new_form_data.form_title
 
             #Se limpian los campos existentes
             self.db.query(models.FormField).filter(models.FormField.form_id == form.id).delete()
 
             # Agrega los nuevos campos
-            for field in form_data.form_fields:
+            for field in new_form_data.form_fields:
                 new_field = models.FormField(
                     form_id=form.id,
                     title=field.title,
@@ -51,9 +44,9 @@ class FormRepository:
                 self.db.add(new_field)
 
             self.db.commit()
-            return form, ""
+            return form
         
         except Exception as e:
             self.db.rollback()  # Rollbackea si algo falla
             print(f"Error occurred: {e}") 
-            return None, "Database Error"
+            return None
