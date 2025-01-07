@@ -38,11 +38,14 @@ def create_project(new_project: CreateProject,
     roles = new_project.roles
     dict_project.pop('roles')
 
+    if not roles:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The project must have at least one role")
+
     if project_repository.get_project_by_user_id_and_title(current_user.id, new_project.name):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The user already has a project with the name "+ new_project.name)
 
     if project_has_roles_with_same_name(roles):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The project has two roles with the same name")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The project mustnt have two roles with the same name")
 
     new_project = project_repository.add_new_project(dict_project, roles)
 
