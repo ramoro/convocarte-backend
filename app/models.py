@@ -142,7 +142,7 @@ class Project(Base):
     description = Column(String)
     category = Column(String, nullable=False)
     region = Column(String, nullable=False)
-    state = Column(String, nullable=False)
+    is_used = Column(Boolean, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
 
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))

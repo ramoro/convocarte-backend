@@ -35,7 +35,7 @@ def step_impl(context, project_name):
     finally:
         session.close()
 
-@given('I have a project with name "{project_name}"')
+@given('I have a project named "{project_name}"')
 def step_impl(context, project_name):
     url = settings.backend_url + "/projects/"
     role_data = {"name": "Neo"}
@@ -48,7 +48,8 @@ def step_impl(context, project_name):
     }
     
     response = requests.post(url, json=project_creation_data, headers=headers)
-    context.response = response
+    context.responsejson = response.json()
+    context.project_id = context.responsejson["id"]
 
 @then('the project should not be created for the user')
 def step_impl(context):
@@ -96,4 +97,45 @@ def step_impl(context, project_name):
 def step_impl(context):
     assert "project must have at least one role" in context.response.text, "Expected error message not found"
 
+@when('I try to delete the project')
+def step_impl(context):
+    url = settings.backend_url + "/projects/{project_id}"
 
+    headers = {
+        "Authorization": f"Bearer {context.token}"
+    }
+    
+    response = requests.delete(url.format(project_id=context.project_id), headers=headers)
+    context.response = response
+
+@then('the project should successfully desappear from the system')
+def step_impl(context):
+    session = SessionLocal()
+    try:
+        project = context.database.query(models.Project).filter(models.Project.id == context.project_id).first()
+        assert project is None, f"Project was not deleted"
+    finally:
+        session.close()
+        
+@then('the castings associated should desappear from the system')
+def step_impl(context):
+    session = SessionLocal()
+    try:
+        castings = context.database.query(models.CastingCall).filter(models.CastingCall.project_id == context.project_id).all()
+        assert len(castings) == 0, f"Casting calls were not deleted"
+    finally:
+        session.close()
+
+@then('the project should not be eliminated from the system')
+def step_impl(context):
+    session = SessionLocal()
+    print("PROJECT ID: " + str(context.project_id))
+    try:
+        project = context.database.query(models.Project).filter(models.Project.id == context.project_id).first()
+        assert project is not None, f"Project was deleted"
+    finally:
+        session.close()
+
+@then('the user should be notified that the project is being used and the castings using it should be finished')
+def step_impl(context):
+    assert "cant be deleted cause its being used by a casting call" in context.response.text, "Expected error message not found"

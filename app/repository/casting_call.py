@@ -7,7 +7,7 @@ class CastingCallRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def add_new_casting_call(self, casting_call, casting_roles):
+    def add_new_casting_call(self, casting_call, casting_roles, associated_project):
         """Recibe un diccionario con los datos del casting y otro diccionario con
         los datos del rol junto a el Form Template que se usara para generar el Form y sus 
         Fields que tendra el rol para que se pueda aplicar a el. Almacena para cada Rol
@@ -22,7 +22,7 @@ class CastingCallRepository:
             self.db.flush() #Asi ya la variable se actualiza con el id generado para el casting
 
             #Por cada rol se crea un Form y sus FormFields a partir de un Form Template
-            #Y luego se agrega la realacion a RoleByCastingCall
+            #Y luego se agrega la informacion del rol expuesto en ExposedRole
             for role in casting_roles:
                 form_template_associated = role['form_template']
                 #Se crea primero el Form y
@@ -51,6 +51,9 @@ class CastingCallRepository:
                 new_role = models.ExposedRole(**role)
                 self.db.add(new_role)
 
+            #Se actualiza el proyecto asociado con su nuevo estado
+            associated_project.is_used = True
+
             self.db.commit()
             self.db.refresh(new_casting_call) 
         except Exception as e:
@@ -72,7 +75,7 @@ class CastingCallRepository:
         casting_call_query.update(updated_casting_call, synchronize_session=False)
         self.db.commit()
     
-        # Retornar el registro actualizado
+        # Retorna el registro actualizado
         return casting_call_query.first()
     
     def get_casting_call_by_title_and_state(self, casting_call_title, state):
@@ -139,3 +142,36 @@ class CastingCallRepository:
             self.db.rollback()  # Rollbackea si algo falla
             print(f"Error occurred: {e}") 
             return None, "Database Error"
+        
+    def finish_casting_call(self, casting_call_id, updated_casting_call):
+        """Recibe el id del casting y el casting ya actualizado. Actualiza el proyecto que tiene asociado en estado
+        de Sin uso en caso de que el proyecto no haya quedado usado en otro casting. Devuelve el casting actualizado."""
+        try:
+            casting_call_query = self.db.query(models.CastingCall).filter(models.CastingCall.id == casting_call_id)
+            casting_call = casting_call_query.first()
+            
+            if not casting_call:
+                return None, "Not Found"
+            
+            project = casting_call.project
+
+            # Verificar si el proyecto tiene más castings asociados que no han sido finalizados
+            other_castings = self.db.query(models.CastingCall).filter(and_(
+                models.CastingCall.project_id == project.id,
+                models.CastingCall.state != "Finalizado"
+            )).all()
+
+            # Si no hay más castings que contengan el proyecto, actualizar el campo is_used del proyecto a False
+            if len(other_castings) == 1:  # Si solo hay un casting asociado (este)
+                project.is_used = False
+                self.db.add(project)  
+
+            casting_call_query.update(updated_casting_call, synchronize_session=False)
+            self.db.commit()
+
+        except Exception as e:
+            self.db.rollback()  # Rollbackea si algo falla
+            print(f"Error occurred: {e}") 
+            return None, "Database Error"
+        
+        return casting_call, None

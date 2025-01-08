@@ -21,7 +21,7 @@ class ProjectResponse(BaseModel):
     name: str
     category: str
     created_at: datetime
-    state: str
+    is_used: bool
 
 class ProjectWithRolesResponse(ProjectResponse):
     roles: List[RoleWithId]

@@ -34,7 +34,7 @@ def create_project(new_project: CreateProject,
     project_repository = ProjectRepository(db)
     dict_project = new_project.model_dump()
     dict_project['owner_id'] = current_user.id
-    dict_project['state'] = "Sin Uso"
+    dict_project['is_used'] = False
     roles = new_project.roles
     dict_project.pop('roles')
 
@@ -74,3 +74,26 @@ def get_user_projects_with_roles(current_user: models.User = Depends(oauth2.get_
     my_projects_with_roles = project_repository.get_user_projects_with_roles(current_user.id)
 
     return my_projects_with_roles
+
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_project(project_id: int, current_user: models.User = 
+                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+    
+    project_repository = ProjectRepository(db)
+
+    project = project_repository.get_project_by_id(project_id)
+
+    if not project:
+        raise HTTPException(status_code=404, detail=f"Project with id {project_id} not found.")
+
+    #Si el proyecto esta siendo en algun casting no finalizado no puede eliminarse
+    if project.is_used:
+        raise HTTPException(status_code=400, detail="The project cant be deleted cause its being used by a casting call.")
+
+    deleted_project = project_repository.delete_project(project_id)
+    
+    if not deleted_project:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                            detail="An error occurred while deleting the project")  
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

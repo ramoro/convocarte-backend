@@ -54,5 +54,24 @@ class ProjectRepository:
     def get_project_by_id(self, project_id):
         return self.db.query(models.Project).filter((models.Project.id == project_id)).first()
     
+    def delete_project(self, project_id):
+        try:
+            #Primero se eliminan todos los castings que estan asociados al proyecto (en teoria deben estar todos finalizados)
+            associated_castings = self.db.query(models.CastingCall).filter((models.CastingCall.project_id == project_id)).all()
+            
+            for casting in associated_castings:
+                self.db.delete(casting)
+            
+            project = self.db.query(models.Project).filter(models.Project.id == project_id).first()
 
+            if project:
+                # Eliminar todos los roles asociados en una sola consulta
+                self.db.query(models.Role).filter(models.Role.project_id == project.id).delete(synchronize_session='fetch')
+                self.db.delete(project)
+                self.db.commit()
+                return True
+            return False
+        except:
+            self.db.rollback()
+            return False
 

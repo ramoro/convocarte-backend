@@ -68,7 +68,9 @@ def step_impl(context, project_name, role_name):
     headers = {
         "Authorization": f"Bearer {context.token}"
     }
-    requests.post(url, json=project_data, headers=headers)
+    response = requests.post(url, json=project_data, headers=headers)
+    context.responsejson = response.json()
+    context.project_id = context.responsejson["id"]
 
 @when('I create a casting call for the project "{project_name}" associating the role "{role_name}" to the form template "{template_title}"')
 def step_impl(context, project_name, role_name, template_title):

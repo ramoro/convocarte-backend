@@ -89,7 +89,9 @@ async def create_casting_call(title: str = Form(...),
     if not casting_call_photos: casting_call_photos = []
 
     #Validamos que haya enviado entidades que existen en la bdd
-    if not project_repository.get_project_by_id(project_id):
+    associated_project = project_repository.get_project_by_id(project_id)
+    
+    if not associated_project:
         raise HTTPException(status_code=404, detail=f"Project with id {project_id} not found.")
 
     #Validacion y armado de lista de roles
@@ -129,12 +131,12 @@ async def create_casting_call(title: str = Form(...),
                         "owner_id": current_user.id,
                         "casting_photos": photos_names,
                         "state": "Borrador"} #Arranca en estado Borrador hasta que se publique
-
+    
     # Se le manda los datos del casting recibidos sumado al id del usuario que lo creo y por otro lado la lista de roles que expondra el casting
-    casting_call_created = casting_call_repository.add_new_casting_call(new_casting_call, roles_list)
+    casting_call_created = casting_call_repository.add_new_casting_call(new_casting_call, roles_list, associated_project)
     if not casting_call_created:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while creating the casting call")
-
+    
     return {'success': True, 'status_code': status.HTTP_201_CREATED,
             'casting_call_title': title, 'casting_call_id': casting_call_created.id }
 
@@ -220,10 +222,13 @@ def finish_casting_call(casting_id: int, casting_call: CastingCallChangeState,
     #Le seteo el nuevo estado al casting (Pausado)
     casting_call_dict['state'] = "Finalizado"
 
-    updated_casting_call = casting_call_repository.update_casting_call(casting_id, casting_call_dict)
+    updated_casting_call, error_message = casting_call_repository.finish_casting_call(casting_id, casting_call_dict)
 
     if not updated_casting_call:
-        raise HTTPException(status_code=404, detail=f"Casting call with id {casting_id} not found.")
+        if "Not Found" in error_message:
+            raise HTTPException(status_code=404, detail=f"Casting call with id {casting_id} not found.")
+        else:
+            raise HTTPException(status_code=505, detail=f"Casting call with id {casting_id} not found.")
 
     return updated_casting_call
 
