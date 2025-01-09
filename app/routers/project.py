@@ -133,3 +133,16 @@ def update_project(project_id: int, updated_project: UpdateProject, current_user
     project_repository.update_project(project_id, project_dict, roles)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.get("/{project_id}", response_model=ProjectWithRolesResponse)
+def get_project(project_id: int, current_user: models.User = Depends(oauth2.get_current_user), 
+                         db: Session = Depends(get_db)):
+    
+    project_repository = ProjectRepository(db)
+
+    project = project_repository.get_project_by_id(project_id)
+
+    if not project:
+        raise HTTPException(status_code=404, detail=f"Project with id {project_id} not found.")
+
+    return project
