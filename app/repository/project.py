@@ -74,4 +74,44 @@ class ProjectRepository:
         except:
             self.db.rollback()
             return False
+        
+    def get_project_by_user_id_and_name(self, user_id, name):
+        return self.db.query(models.Project).filter(
+            and_(
+                models.Project.owner_id == user_id,
+                models.Project.name == name
+            )).first()
+    
+    def update_project(self, project_id, updated_project, roles):
+        """Recibe el id del proyecto a actualizar, un diccionario con los datos actualizados del proyecto y
+        una lista de diccionarios con cada rol y su nueva informacion. Actualiza estos datos nuevos y devuelve
+        el proyecto actualizado, o None en caso de error."""
+        try:
+            project_query = self.db.query(models.Project).filter(models.Project.id == project_id)
 
+            if not project_query.first():
+                return None
+
+            project_query.update(updated_project, synchronize_session=False)
+
+            #Se limpian los roles existentes
+            self.db.query(models.Role).filter(models.Role.project_id == project_id).delete()
+
+            for role in roles:
+                if "description" not in role:
+                    role["description"] = None
+
+                updated_role = models.Role(
+                    name=role["name"] ,
+                    project_id=project_id,
+                    description=role["description"] 
+                )
+                self.db.add(updated_role)
+
+            self.db.commit()
+            return updated_project
+        
+        except Exception as e:
+            self.db.rollback()  # Rollbackea si algo falla
+            print(f"Error occurred: {e}") 
+            return None

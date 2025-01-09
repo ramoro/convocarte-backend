@@ -18,7 +18,7 @@ Feature: Project Creation
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a project with name "Matrix Movie"
+    And I have a project named "Matrix Movie"
     When I create a project with name "Matrix Movie"
     Then the project should not be created for the user
     And the user should be notified that they already have a project with that name

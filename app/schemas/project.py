@@ -25,3 +25,11 @@ class ProjectResponse(BaseModel):
 
 class ProjectWithRolesResponse(ProjectResponse):
     roles: List[RoleWithId]
+
+class UpdateProject(BaseModel):
+    name: str
+    category: str
+    is_used: bool
+    description: Optional[str] = None
+    region: str
+    roles: List[Role]

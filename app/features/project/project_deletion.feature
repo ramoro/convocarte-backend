@@ -28,7 +28,7 @@ Feature: Project Creation
       | remuneration_type         | Remunerado |
     When I try to delete the project
     Then the project should not be eliminated from the system
-    And the user should be notified that the project is being used and the castings using it should be finished
+    And the user should be notified that the project is being used and must end the castings that are using it in order to delete the project
     
   Scenario: Successful deletion of a project within ended castings
     Given Im logged in on the platform with my account
@@ -44,7 +44,6 @@ Feature: Project Creation
       | remuneration_type         | Remunerado |
     And I publish the casting call with an expiration date greater than the current date
     And I finish the casting call
-    When I create a project named "Matrix Movie" with two roles named "Neo"
     When I try to delete the project
     Then the project should successfully desappear from the system
     And the castings associated should desappear from the system
