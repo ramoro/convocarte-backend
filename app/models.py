@@ -144,6 +144,7 @@ class Project(Base):
     region = Column(String, nullable=False)
     is_used = Column(Boolean, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    deleted_at = Column(TIMESTAMP(timezone=True))
 
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     owner = relationship("User", back_populates="projects")
@@ -162,6 +163,7 @@ class Role(Base):
     description = Column(String)
     assigned_user_id = Column(Integer)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    deleted_at = Column(TIMESTAMP(timezone=True))
 
     # Define la relación inversa con el proyecto al que esta asociado
     project = relationship("Project", back_populates="roles")
@@ -182,6 +184,8 @@ class CastingCall(Base):
     casting_photos = Column(String)
     state = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    deleted_at = Column(TIMESTAMP(timezone=True))
+
     project = relationship("Project", back_populates="casting_calls")  # Relación con la tabla Project
 
     # Relación inversa con ExposedRole
