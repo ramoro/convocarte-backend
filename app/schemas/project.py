@@ -21,7 +21,17 @@ class ProjectResponse(BaseModel):
     name: str
     category: str
     created_at: datetime
-    state: str
+    is_used: bool
+    region: str
+    description: Optional[str] = None
 
 class ProjectWithRolesResponse(ProjectResponse):
     roles: List[RoleWithId]
+
+class UpdateProject(BaseModel):
+    name: str
+    category: str
+    is_used: bool
+    description: Optional[str] = None
+    region: str
+    roles: List[Role]

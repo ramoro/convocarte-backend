@@ -77,8 +77,8 @@ def update_form_template(form_template: UpdateFormTemplate, current_user: models
     
     template_form = form_template_repository.get_form_template_by_user_id_and_title(current_user.id, form_template.form_template_title)
 
-    #Si existe un form con ese titulo y el titulo no es el mismo que el que ya tenia antes (es decir que es un titulo nuevo), entonces
-    #significa que esta repitiendo el titulo de otro form que ya tiene el usuario
+    #Si existe un form con ese titulo y el titulo no es el mismo que el que ya tenia antes (es decir que es un titulo nuevo, lo actualizo), 
+    #entonces significa que esta repitiendo el titulo de otro form que ya tiene el usuario
     if template_form and form_template.form_template_title != form_template.original_form_template_title:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The user already has a form template with the title " + form_template.form_template_title)
 
