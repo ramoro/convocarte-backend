@@ -86,7 +86,7 @@ class AcademicExperience(Base):
     __tablename__ = "academic_experiences"
 
     id = Column(Integer, primary_key=True, nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
     institution = Column(String, nullable=False)
     field_of_study = Column(String, nullable=False)
     start_date = Column(Date, nullable=False) 
@@ -98,7 +98,7 @@ class WorkExperience(Base):
     __tablename__ = "work_experiences"
 
     id = Column(Integer, primary_key=True, nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
     work_title = Column(String, nullable=False)
     role = Column(String, nullable=False)
     start_date = Column(Date, nullable=False) 
@@ -112,7 +112,7 @@ class WorkExperience(Base):
 class FormTemplate(Base):
     __tablename__ = "form_templates"
     id = Column(Integer, primary_key=True, nullable=False)
-    owner_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, )
+    owner_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
     form_template_title = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     owner = relationship("User", back_populates="form_templates")
@@ -124,7 +124,7 @@ class FormTemplate(Base):
 class FormTemplateField(Base):
     __tablename__ = "form_template_fields"
     id = Column(Integer, primary_key=True, nullable=False)
-    form_template_id = Column(Integer, ForeignKey('form_templates.id', ondelete="CASCADE"), nullable=False)
+    form_template_id = Column(Integer, ForeignKey('form_templates.id', ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String, nullable=False)
     type = Column(String, nullable=False) 
     order = Column(Integer, nullable=False)
@@ -137,14 +137,14 @@ class FormTemplateField(Base):
 class Project(Base):
     __tablename__ = "projects"
     id = Column(Integer, primary_key=True, nullable=False)
-    owner_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    owner_id = Column(Integer, ForeignKey('users.id'), nullable=False, index=True)
     name = Column(String, nullable=False)
     description = Column(String)
-    category = Column(String, nullable=False)
+    category = Column(String, nullable=False, index=True)
     region = Column(String, nullable=False)
     is_used = Column(Boolean, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
-    deleted_at = Column(TIMESTAMP(timezone=True))
+    deleted_at = Column(TIMESTAMP(timezone=True), index=True)
 
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     owner = relationship("User", back_populates="projects")
@@ -173,18 +173,18 @@ class Role(Base):
 class CastingCall(Base):
     __tablename__ = "casting_calls"
     id = Column(Integer, primary_key=True, nullable=False)
-    project_id = Column(Integer, ForeignKey('projects.id'), nullable=False)
+    project_id = Column(Integer, ForeignKey('projects.id'), nullable=False, )
     owner_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
     owner = relationship("User", back_populates="casting_calls")
     title = Column(String, nullable=False)
     description = Column(String)
-    start_date = Column(Date)
+    publication_date = Column(Date)
     expiration_date = Column(Date)
-    remuneration_type =  Column(String, nullable=False)
+    remuneration_type =  Column(String, nullable=False, index=True)
     casting_photos = Column(String)
-    state = Column(String, nullable=False)
+    state = Column(String, nullable=False, index=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
-    deleted_at = Column(TIMESTAMP(timezone=True))
+    deleted_at = Column(TIMESTAMP(timezone=True), index=True)
 
     project = relationship("Project", back_populates="casting_calls")  # Relación con la tabla Project
 
@@ -200,7 +200,7 @@ class Form(Base):
     casting_call_id = Column(Integer, ForeignKey('casting_calls.id', ondelete="CASCADE"), nullable=False)
     form_title = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
-    deleted_at = Column(TIMESTAMP(timezone=True))
+    deleted_at = Column(TIMESTAMP(timezone=True), index=True)
 
     # Define la relación con FormField
     form_fields = relationship("FormField", back_populates="form")
@@ -210,7 +210,7 @@ class Form(Base):
 class FormField(Base):
     __tablename__ = "form_fields"
     id = Column(Integer, primary_key=True, nullable=False)
-    form_id = Column(Integer, ForeignKey('forms.id', ondelete="CASCADE"), nullable=False)
+    form_id = Column(Integer, ForeignKey('forms.id', ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String, nullable=False)
     type = Column(String, nullable=False) 
     order = Column(Integer, nullable=False)
@@ -229,11 +229,11 @@ class ExposedRole(Base):
     form_id = Column(Integer, ForeignKey('forms.id', ondelete="CASCADE"), nullable=False)
     disabled = Column(Boolean, nullable=False, default=False)
 
-    min_age_required = Column(Integer)
-    max_age_required = Column(Integer)
-    min_height_required = Column(Integer)
-    max_height_required = Column(Integer)
-    hair_colors_required = Column(String)
+    min_age_required = Column(Numeric(10, 2), index=True)
+    max_age_required = Column(Numeric(10, 2), index=True)
+    min_height_required = Column(Numeric(10, 2), index=True)
+    max_height_required = Column(Numeric(10, 2), index=True)
+    hair_colors_required = Column(String, index=True)
     additional_requirements = Column(String)
     has_limited_spots = Column(Boolean, nullable=False)
     spots_amount = Column(Integer)
