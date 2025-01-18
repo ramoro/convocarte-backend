@@ -4,14 +4,15 @@ from typing import List
 from typing import Optional
 import pytz
 from dateutil import parser
+from schemas.project import ProjectResponse
 
 
 class CastingCallExposedRoleInfo(BaseModel):
     role_id: int
     min_age_required: Optional[int] = None
     max_age_required: Optional[int] = None
-    min_height_required: Optional[int] = None
-    max_height_required: Optional[int] = None
+    min_height_required: Optional[float] = None
+    max_height_required: Optional[float] = None
     hair_colors_required: Optional[str] = None
     additional_requirements: Optional[str] = None
     has_limited_spots: bool
@@ -27,7 +28,7 @@ class CastingCallRoleEdition(BaseModel):
 class CreateCastingCall(BaseModel):
     title: str
     project_id: int
-    #start_date: Optional[Union[date, str]] Cuando el casting se crea, se crea en borrador, luego se publica, por eso primero no vienen las fechas
+    #publication_date: Optional[Union[date, str]] Cuando el casting se crea, se crea en borrador, luego se publica, por eso primero no vienen las fechas
     #expiration_date: Optional[Union[date, str]]
     remuneration_type: str
     description: Optional[str] = None
@@ -42,11 +43,13 @@ class CastingCallPreviewResponse(BaseModel):
     state: str
     casting_photos: Optional[List[str]] = None
     created_at: datetime
+    publication_date: Optional[date]
+    project: Optional[ProjectResponse] = None
 
 class PublishedCastingCallResponse(BaseModel):
     title: str
     state: str
-    start_date: date
+    publication_date: date
     expiration_date: date
 
 class CastingCallPublication(BaseModel):
@@ -105,3 +108,11 @@ class CastingCallResponse(CastingCallPreviewResponse):
     state: str
     project: CastingCallProject
     exposed_roles: List[CastingCallExposedRole]
+
+class CastingCallFilter(BaseModel):
+    date_order: str
+    remuneration_types: Optional[List[str]] = None
+    categories: Optional[List[str]] = None
+    age: Optional[int] = None
+    height: Optional[float] = None
+    hair_colors: Optional[List[str]] = None

@@ -5,7 +5,14 @@ from starlette import status
 from sqlalchemy.orm import Session
 import oauth2
 import models
-from schemas.casting_call import CastingCallPreviewResponse, CastingCallPublication, PublishedCastingCallResponse, CastingCallChangeState, CastingCallResponse
+from schemas.casting_call import  ( 
+    CastingCallPreviewResponse, 
+    CastingCallPublication, 
+    PublishedCastingCallResponse, 
+    CastingCallChangeState, 
+    CastingCallResponse,
+    CastingCallFilter
+)
 from repository.casting_call import CastingCallRepository
 from repository.project import ProjectRepository
 from repository.role import RoleRepository
@@ -153,6 +160,23 @@ def get_user_casting_calls(current_user: models.User = Depends(oauth2.get_curren
     
     return my_casting_calls
 
+@router.post("/published", response_model=List[CastingCallPreviewResponse])
+def search_of_published_casting_calls(casting_filters: CastingCallFilter, current_user: models.User = Depends(oauth2.get_current_user), 
+                        db: Session = Depends(get_db)):
+    
+    casting_call_repository = CastingCallRepository(db)
+
+    casting_calls = casting_call_repository.get_published_casting_calls(casting_filters)
+
+    if casting_calls is None:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+    #TODO: Almacenar photos con path (local o drive segun ambiente) para no tener que setearselo cada vez que pido los castings
+    for casting_call in casting_calls:
+        add_path_to_photo(casting_call)
+    
+    return casting_calls
+
 @router.patch("/publish/{casting_id}")
 def publish_casting_call(casting_id: int, casting_call: CastingCallPublication, 
                          current_user: models.User = Depends(oauth2.get_current_user), 
@@ -171,7 +195,7 @@ def publish_casting_call(casting_id: int, casting_call: CastingCallPublication,
     #Le seteo la fecha de publicacion con la fecha actual
     casting_call_dict = casting_call.model_dump()
     argentina_tz = pytz.timezone('America/Argentina/Buenos_Aires')
-    casting_call_dict['start_date'] = datetime.now(argentina_tz).date()
+    casting_call_dict['publication_date'] = datetime.now(argentina_tz).date()
 
     #Le seteo el nuevo estado al casting (Publicado)
     casting_call_dict['state'] = "Publicado"
@@ -228,7 +252,7 @@ def finish_casting_call(casting_id: int, casting_call: CastingCallChangeState,
         if "Not Found" in error_message:
             raise HTTPException(status_code=404, detail=f"Casting call with id {casting_id} not found.")
         else:
-            raise HTTPException(status_code=505, detail=f"Casting call with id {casting_id} not found.")
+            raise HTTPException(status_code=500, detail=f"Internal Server Error")
 
     return updated_casting_call
 
@@ -237,7 +261,6 @@ def get_casting_call(casting_id: int, current_user: models.User = Depends(oauth2
                         db: Session = Depends(get_db)) -> CastingCallResponse:
     
     casting_call_repository = CastingCallRepository(db)
-
     casting_call = casting_call_repository.get_casting_call_by_id(casting_id)
 
     if not casting_call:

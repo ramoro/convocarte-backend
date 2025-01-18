@@ -1,6 +1,6 @@
 import models
 from sqlalchemy.orm import Session, joinedload, subqueryload
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 
 class CastingCallRepository:
 
@@ -175,3 +175,94 @@ class CastingCallRepository:
             return None, "Database Error"
         
         return casting_call, None
+
+    def get_published_casting_calls(self, casting_filters):
+        try:
+            query = self.db.query(models.CastingCall).filter(
+                and_(
+                    models.CastingCall.state == "Publicado",  # Solo castings publicados
+                    models.CastingCall.deleted_at == None  # No eliminados
+                )
+            ).options(joinedload(models.CastingCall.project), joinedload(models.CastingCall.exposed_roles))  # Cargar projecto y roles asociados a CastingCall
+
+            # Filtrar por date_order (Ascendente o Descendente)
+            if casting_filters.date_order == "Ascendente":
+                query = query.order_by(models.CastingCall.publication_date.asc())
+            elif casting_filters.date_order == "Descendente":
+                query = query.order_by(models.CastingCall.publication_date.desc())
+
+            # Si trae filtro de edad, filtrar por edad, teniendo en cuenta
+            # que el rango de edad puede ser abierto (min_age_required con valor y max_age_required None, o viceversa)
+            # tambien agarra los castings que no setearon filtro de edad
+            if casting_filters.age is not None:
+                query = query.filter(
+                    models.CastingCall.exposed_roles.any(
+                        and_(
+                            models.ExposedRole.disabled == False, #El rol a evaluar debe estar habilitado
+                            or_(
+                                and_(models.ExposedRole.min_age_required <= casting_filters.age, models.ExposedRole.max_age_required >= casting_filters.age),
+                                and_(models.ExposedRole.min_age_required <= casting_filters.age, models.ExposedRole.max_age_required == None),
+                                and_(models.ExposedRole.min_age_required == None, models.ExposedRole.max_age_required >= casting_filters.age),
+                                and_(models.ExposedRole.min_age_required == None, models.ExposedRole.max_age_required == None)
+                            )
+                        )
+
+                    )
+                )
+
+            # Si trae filtro de altura, idem que por edad
+            if casting_filters.height is not None:
+                query = query.filter(
+                    models.CastingCall.exposed_roles.any(
+                        and_(
+                            models.ExposedRole.disabled == False, #El rol a evaluar debe estar habilitado
+                            or_(
+                                and_(models.ExposedRole.min_height_required <= casting_filters.height, models.ExposedRole.max_height_required >= casting_filters.height),
+                                and_(models.ExposedRole.min_height_required <= casting_filters.height, models.ExposedRole.max_height_required == None),
+                                and_(models.ExposedRole.min_height_required == None, models.ExposedRole.max_height_required >= casting_filters.height),
+                                and_(models.ExposedRole.min_height_required == None, models.ExposedRole.max_height_required == None)
+                            )
+                        ) 
+                    )
+                )
+
+            # Filtrar por remuneration_types (cadena de texto con valores separados por comas)
+            if casting_filters.remuneration_types:
+                query = query.filter(
+                    models.CastingCall.remuneration_type.in_(casting_filters.remuneration_types)
+                )
+
+            # Filtrar por categories (cadena de texto con valores separados por comas)
+            if casting_filters.categories:
+                query = query.join(models.CastingCall.project).filter(
+                    models.Project.category.in_(casting_filters.categories)
+                )
+
+            # Filtrar por hair_colors dentro de los roles (donde hair_colors_required es una cadena separada por comas)
+            # Me fijo que 
+            if casting_filters.hair_colors:
+                #Creo una condicion or para obtener cualquier casting que dentro suyo tenga aunque sea un rol con al menos un color
+                #de pelo que coincida con los colores de pelo que vienen en la lista de filtro casting_filters.hair_colors
+                or_conditions = []
+                for hair_color in casting_filters.hair_colors:
+                    or_conditions.append(
+                        models.ExposedRole.hair_colors_required.ilike(f"%{hair_color}%")
+                    )
+                
+                query = query.filter(
+                    models.CastingCall.exposed_roles.any(
+                        and_(
+                            models.ExposedRole.disabled == False,  # El rol a evaluar debe estar habilitado
+                            or_(*or_conditions,
+                                models.ExposedRole.hair_colors_required == "", # si casting no trae filtro de pelos, se devuelve tambien
+                                models.ExposedRole.hair_colors_required == None)  
+                        )
+                    )
+                )
+           
+            casting_calls = query.all()
+
+            return casting_calls
+        except Exception as e:
+            print(f"Error occurred: {e}") 
+            return None

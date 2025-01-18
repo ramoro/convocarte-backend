@@ -88,7 +88,7 @@ def update_form_template(form_template: UpdateFormTemplate, current_user: models
         if error == "Not Found Error":
             raise HTTPException(status_code=404, detail=f"Form template with id {form_template.id} not found.")
         else:
-            raise HTTPException(status_code=500, detail=f"Internal Server Error")
+            raise HTTPException(status_code=500, detail="Internal Server Error")
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
