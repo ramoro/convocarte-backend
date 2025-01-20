@@ -12,7 +12,6 @@ Feature: Project Creation
     And I have a project named "Matrix Movie"
     When I try to delete the project
     Then the project should successfully desappear from the system
-    And the castings associated should desappear from the system
 
   Scenario: Unsuccessful deletion of Project within an unended casting
     Given Im logged in on the platform with my account

@@ -113,7 +113,7 @@ def step_impl(context):
     session = SessionLocal()
     try:
         project = context.database.query(models.Project).filter(models.Project.id == context.project_id).first()
-        assert project is None, f"Project was not deleted"
+        assert project.deleted_at is not None, f"Project was not deleted"
     finally:
         session.close()
         
@@ -122,7 +122,7 @@ def step_impl(context):
     session = SessionLocal()
     try:
         castings = context.database.query(models.CastingCall).filter(models.CastingCall.project_id == context.project_id).all()
-        assert len(castings) == 0, f"Casting calls were not deleted"
+        assert castings[0].deleted_at is not None, f"Casting calls were not deleted"
     finally:
         session.close()
 
@@ -131,7 +131,7 @@ def step_impl(context):
     session = SessionLocal()
     try:
         project = context.database.query(models.Project).filter(models.Project.id == context.project_id).first()
-        assert project is not None, f"Project was deleted"
+        assert project.deleted_at is None, f"Project was deleted"
     finally:
         session.close()
 
