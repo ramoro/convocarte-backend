@@ -44,8 +44,6 @@ def after_scenario(context, scenario):
         session.execute("TRUNCATE TABLE casting_calls CASCADE;")
         session.execute("TRUNCATE TABLE exposed_roles CASCADE;")
         session.execute("TRUNCATE TABLE projects CASCADE;")
-        session.execute("TRUNCATE TABLE users CASCADE;")
-
         
         # Confirmar los cambios
         session.commit()
