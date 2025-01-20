@@ -6,7 +6,7 @@ import models
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
 
-@when('I edit the form "{form_title}" generated for the exposed role "{role_name}" setting three form fields')
+@when('I edit the form "{form_title}" generated for the exposed role "{role_name}" setting three form fields') 
 def step_impl(context, form_title, role_name):
     url = settings.backend_url + "/forms"
     print(context)
