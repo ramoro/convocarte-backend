@@ -146,12 +146,12 @@ class UpdateUser(BaseModel):
     skills_additionals: Optional[str] = None
 
     @field_validator('birth_date', mode='before')
-    def parse_start_date(cls, v):
+    def parse_publication_date(cls, v):
         if isinstance(v, str):
             try:
                 return parser.parse(v).date()
             except ValueError:
-                raise ValueError(f'Invalid date format for start_date: {v}')
+                raise ValueError(f'Invalid date format for publication_date: {v}')
         return v
 
 

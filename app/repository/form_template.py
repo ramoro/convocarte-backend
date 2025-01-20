@@ -60,10 +60,13 @@ class FormTemplateRepository:
     def delete_form_template(self, form_template_id: int):
         error= ""
         try:
-            form_template = self.db.query(models.FormTemplate).filter(models.FormTemplate.id == form_template_id).first()
+            form_template = self.db.query(models.FormTemplate).\
+            filter(models.FormTemplate.id == form_template_id).first()
+            
             if form_template:
                 # Eliminar todos los campos asociados en una sola consulta
-                self.db.query(models.FormTemplateField).filter(models.FormTemplateField.form_template_id == form_template_id).delete(synchronize_session='fetch')
+                self.db.query(models.FormTemplateField).\
+                filter(models.FormTemplateField.form_template_id == form_template_id).delete(synchronize_session='fetch')
 
                 # Eliminar el formulario
                 self.db.delete(form_template)
@@ -81,7 +84,8 @@ class FormTemplateRepository:
         try:
 
             # Obtener el form template existente
-            form_template = self.db.query(models.FormTemplate).filter(models.FormTemplate.id == form_template_data.id).first()
+            form_template = self.db.query(models.FormTemplate).\
+            filter(models.FormTemplate.id == form_template_data.id).first()
 
             if not form_template:
                 return None, "Not Found Error" 
@@ -90,7 +94,8 @@ class FormTemplateRepository:
             form_template.form_template_title = form_template_data.form_template_title
 
             #Se limpian los campos existentes
-            self.db.query(models.FormTemplateField).filter(models.FormTemplateField.form_template_id == form_template.id).delete()
+            self.db.query(models.FormTemplateField).\
+            filter(models.FormTemplateField.form_template_id == form_template.id).delete()
 
             # Agrega los nuevos campos
             for field in form_template_data.form_template_fields:

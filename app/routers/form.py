@@ -11,13 +11,14 @@ from repository.casting_call import CastingCallRepository
 
 router = APIRouter(
     prefix="/forms", 
-    tags=["Forms"]
+    tags=["Forms"],
+    dependencies=[Depends(oauth2.get_current_user)]
 )
 
 
 @router.get("/{form_id}", response_model=FormWithFields)
-def get_form(form_id: int, current_user: models.User = Depends(oauth2.get_current_user), 
-                         db: Session = Depends(get_db)):
+def get_form(form_id: int,
+            db: Session = Depends(get_db)):
     
     form_repository = FormRepository(db)
 
@@ -29,8 +30,7 @@ def get_form(form_id: int, current_user: models.User = Depends(oauth2.get_curren
     return form
 
 @router.put("/", status_code=status.HTTP_204_NO_CONTENT)
-def update_form(updated_form: FormWithFields, current_user: models.User = 
-                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+def update_form(updated_form: FormWithFields, db: Session = Depends(get_db)):
     
     form_repository = FormRepository(db)
     casting_call_repository = CastingCallRepository(db)
@@ -45,14 +45,16 @@ def update_form(updated_form: FormWithFields, current_user: models.User =
     casting_state = casting_call.state
 
     if casting_state == "Publicado":
-        raise HTTPException(status_code=400, detail="The form cant be updated cause its casting call is published. Pause it to update the form.")
+        raise HTTPException(status_code=400, 
+                            detail="The form cant be updated cause its casting call is published. Pause it to update the form.")
     if casting_state == "Finalizado":
-        raise HTTPException(status_code=400, detail="The form cant be updated cause its casting call has finished.")
+        raise HTTPException(status_code=400, 
+                            detail="The form cant be updated cause its casting call has finished.")
 
     result = form_repository.update_form(form, updated_form)
 
     if not result:
-        raise HTTPException(status_code=500, detail=f"Internal Server Error")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

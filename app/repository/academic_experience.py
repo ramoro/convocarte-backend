@@ -16,13 +16,16 @@ class AcademicExperienceRepository:
         return new_academic_exp
     
     def get_academic_experiences_by_user_id(self, user_id):
-        return self.db.query(models.AcademicExperience).filter((models.AcademicExperience.user_id == user_id)).all()
+        return self.db.query(models.AcademicExperience).\
+                filter((models.AcademicExperience.user_id == user_id)).all()
     
     def get_academic_experience_by_id(self, id):
-        return self.db.query(models.AcademicExperience).filter(models.AcademicExperience.id == id).first()
+        return self.db.query(models.AcademicExperience).\
+                filter(models.AcademicExperience.id == id).first()
     
     def delete_academic_experience(self, academic_exp_id: int):
-        academic_exp = self.db.query(models.AcademicExperience).filter(models.AcademicExperience.id == academic_exp_id).first()
+        academic_exp = self.db.query(models.AcademicExperience).\
+                        filter(models.AcademicExperience.id == academic_exp_id).first()
         if academic_exp:
             self.db.delete(academic_exp)
             self.db.commit()
@@ -30,7 +33,8 @@ class AcademicExperienceRepository:
         return False
     
     def update_academic_experience(self, academic_exp_id, updated_academic_exp):
-        academic_exp_query = self.db.query(models.AcademicExperience).filter(models.AcademicExperience.id == academic_exp_id)
+        academic_exp_query = self.db.query(models.AcademicExperience).\
+                            filter(models.AcademicExperience.id == academic_exp_id)
 
         if not academic_exp_query.first():
             return None

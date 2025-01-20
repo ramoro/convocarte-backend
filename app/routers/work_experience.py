@@ -10,7 +10,8 @@ from typing import List
 
 router = APIRouter(
     prefix="/work-experiences", 
-    tags=["WorkExperiences"]
+    tags=["WorkExperiences"],
+    dependencies=[Depends(oauth2.get_current_user)]
 )
 
 @router.post("/", response_model=WorkExperienceResponse)
@@ -25,7 +26,8 @@ async def add_work_experience(new_work_experience: WorkExperienceBase,
     return new_work_exp
 
 @router.get("/", response_model=List[WorkExperienceResponse])
-async def list_work_experiences(current_user: models.User = Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+async def list_work_experiences(current_user: models.User = Depends(oauth2.get_current_user), 
+                                db: Session = Depends(get_db)):
     work_exp_repository = WorkExperienceRepository(db)
     
     my_work_experiences = work_exp_repository.get_work_experiences_by_user_id(current_user.id)
@@ -33,8 +35,7 @@ async def list_work_experiences(current_user: models.User = Depends(oauth2.get_c
     return my_work_experiences
 
 @router.delete("/{work_exp_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_work_experience(work_exp_id: int, current_user: models.User = 
-                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+def delete_work_experience(work_exp_id: int, db: Session = Depends(get_db)):
     work_exp_repository = WorkExperienceRepository(db)
 
     deleted = work_exp_repository.delete_work_experience(work_exp_id)
@@ -45,8 +46,8 @@ def delete_work_experience(work_exp_id: int, current_user: models.User =
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.put("/{work_exp_id}", response_model=WorkExperienceBase)
-def update_work_experience(work_exp_id: int, updated_work_exp: WorkExperienceUpdate, current_user: models.User = 
-                Depends(oauth2.get_current_user), db: Session = Depends(get_db)):
+def update_work_experience(work_exp_id: int, updated_work_exp: WorkExperienceUpdate,
+                            db: Session = Depends(get_db)):
     work_exp_repository = WorkExperienceRepository(db)
     updated_exp = work_exp_repository.update_work_experience(work_exp_id, updated_work_exp.model_dump())
 

@@ -5,7 +5,14 @@ from starlette import status
 from sqlalchemy.orm import Session
 import oauth2
 import models
-from schemas.casting_call import CastingCallPreviewResponse, CastingCallPublication, PublishedCastingCallResponse, CastingCallChangeState, CastingCallResponse
+from schemas.casting_call import  ( 
+    CastingCallPreviewResponse, 
+    CastingCallPublication, 
+    PublishedCastingCallResponse, 
+    CastingCallChangeState, 
+    CastingCallResponse,
+    CastingCallFilter
+)
 from repository.casting_call import CastingCallRepository
 from repository.project import ProjectRepository
 from repository.role import RoleRepository
@@ -27,7 +34,8 @@ else:
 
 router = APIRouter(
     prefix="/casting-calls", 
-    tags=["CastingCalls"]
+    tags=["CastingCalls"],
+    dependencies=[Depends(oauth2.get_current_user)]
 )
 
 def add_path_to_photo(casting_call):
@@ -37,10 +45,16 @@ def add_path_to_photo(casting_call):
         #Si es corrida local uso el path local, sino la url para descargar desde google drive
         if "localhost" in settings.backend_url:
             #Se hace un split y se le agrega a cada photo el path donde se ubica localmente
-            photos_with_paths = list(map(lambda photo_name : settings.backend_url + settings.casting_call_photos_path[1:] + photo_name, casting_call.casting_photos.split(",")))
+            photos_with_paths = list(map(
+                lambda photo_name : settings.backend_url + settings.casting_call_photos_path[1:] + photo_name,
+                casting_call.casting_photos.split(",")
+                ))
         else:
             #Para el caso de google drive, se saca la extension de la foto, quedando solo el nombre, que es el id que tiene en el google drive
-            photos_with_paths = list(map(lambda photo_name : CLOUD_STORAGE_URL + photo_name.split('.')[0], casting_call.casting_photos.split(",")))
+            photos_with_paths = list(map(
+                lambda photo_name : CLOUD_STORAGE_URL + photo_name.split('.')[0], 
+                casting_call.casting_photos.split(",")
+                ))
         
         casting_call.casting_photos = photos_with_paths
     else:
@@ -61,7 +75,10 @@ async def store_casting_photos(new_casting_call_photos):
                 detail=f"Photo {filename} with not allowed file extension.")
         
         #TODO: eliminar fotos almacenadas si falla add_new_casting_call del repository
-        name_to_store, file_url = await storage_manager.store_file(extension, filepath, photo_file, True, 600, 650)
+        name_to_store, file_url = await storage_manager.store_file(extension, 
+                                                                   filepath, 
+                                                                   photo_file, 
+                                                                   True, 600, 650)
         
         new_photos_names += name_to_store + ","
     new_photos_names = new_photos_names[:-1] #Elimino la coma del final
@@ -92,7 +109,8 @@ async def create_casting_call(title: str = Form(...),
     associated_project = project_repository.get_project_by_id(project_id)
     
     if not associated_project:
-        raise HTTPException(status_code=404, detail=f"Project with id {project_id} not found.")
+        raise HTTPException(status_code=404, 
+                            detail=f"Project with id {project_id} not found.")
 
     #Validacion y armado de lista de roles
     roles_list = []
@@ -101,18 +119,22 @@ async def create_casting_call(title: str = Form(...),
         
         #Validacion de campos requeridos por cada rol
         if not role.get('role_id'):
-            raise HTTPException(status_code=400, detail="role_id is required for each role.")
+            raise HTTPException(status_code=400, 
+                                detail="role_id is required for each role.")
     
         if not role.get('form_template_id'):
-            raise HTTPException(status_code=400, detail="Form template is required for each role. Every role needs the field form_template.")
+            raise HTTPException(status_code=400, 
+                                detail="Form template is required for each role. Every role needs the field form_template.")
         
         #Validacion de ids existentes en la bdd
         if not role_repository.get_role_by_id(role["role_id"]):
-            raise HTTPException(status_code=404, detail=f"Role with id {role['role_id']} not found.")
+            raise HTTPException(status_code=404, 
+                                detail=f"Role with id {role['role_id']} not found.")
         form_template = form_template_repository.get_form_template_by_id(role["form_template_id"])
 
         if not form_template:
-            raise HTTPException(status_code=404, detail=f"Form template with id {role['form_template_id']} not found.")
+            raise HTTPException(status_code=404, 
+                                detail=f"Form template with id {role['form_template_id']} not found.")
         
         # Agregamos al diccionario con la info del rol el modelo de Form Template para que despues se use para crear
         # el Form con su misma info.
@@ -132,10 +154,13 @@ async def create_casting_call(title: str = Form(...),
                         "casting_photos": photos_names,
                         "state": "Borrador"} #Arranca en estado Borrador hasta que se publique
     
-    # Se le manda los datos del casting recibidos sumado al id del usuario que lo creo y por otro lado la lista de roles que expondra el casting
-    casting_call_created = casting_call_repository.add_new_casting_call(new_casting_call, roles_list, associated_project)
+    # Se le manda los datos del casting recibidos sumado al id del usuario que lo creo 
+    # y por otro lado la lista de roles que expondra el casting
+    casting_call_created = casting_call_repository.add_new_casting_call(new_casting_call, 
+                                                                        roles_list, associated_project)
     if not casting_call_created:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="An error occurred while creating the casting call")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                            detail="An error occurred while creating the casting call")
     
     return {'success': True, 'status_code': status.HTTP_201_CREATED,
             'casting_call_title': title, 'casting_call_id': casting_call_created.id }
@@ -153,25 +178,44 @@ def get_user_casting_calls(current_user: models.User = Depends(oauth2.get_curren
     
     return my_casting_calls
 
+@router.post("/published", response_model=List[CastingCallPreviewResponse])
+def search_of_published_casting_calls(casting_filters: CastingCallFilter, 
+                        db: Session = Depends(get_db)):
+    
+    casting_call_repository = CastingCallRepository(db)
+
+    casting_calls = casting_call_repository.get_published_casting_calls(casting_filters)
+
+    if casting_calls is None:
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+    
+    #TODO: Almacenar photos con path (local o drive segun ambiente) 
+    # para no tener que setearselo cada vez que pido los castings
+    for casting_call in casting_calls:
+        add_path_to_photo(casting_call)
+    
+    return casting_calls
+
 @router.patch("/publish/{casting_id}")
-def publish_casting_call(casting_id: int, casting_call: CastingCallPublication, 
-                         current_user: models.User = Depends(oauth2.get_current_user), 
+def publish_casting_call(casting_id: int, casting_call: CastingCallPublication,  
                          db: Session = Depends(get_db)) -> PublishedCastingCallResponse:
     
     if casting_call.state == "Finalizado":
-        raise HTTPException(status_code=400, detail="The casting cannot be published because it has already ended.")
+        raise HTTPException(status_code=400,
+                             detail="The casting cannot be published because it has already ended.")
 
     casting_call_repository = CastingCallRepository(db)
 
     #Se valida que no exista un casting publicado con el mismo nombre
     existing_published_casting = casting_call_repository.get_casting_call_by_title_and_state(casting_call.title, "Publicado")
     if existing_published_casting:
-        raise HTTPException(status_code=400, detail=f"The casting cannot be published because there is already a published casting with the title {casting_call.title}")
+        raise HTTPException(status_code=400, 
+                            detail=f"The casting cannot be published because there is already a published casting with the title {casting_call.title}")
 
     #Le seteo la fecha de publicacion con la fecha actual
     casting_call_dict = casting_call.model_dump()
     argentina_tz = pytz.timezone('America/Argentina/Buenos_Aires')
-    casting_call_dict['start_date'] = datetime.now(argentina_tz).date()
+    casting_call_dict['publication_date'] = datetime.now(argentina_tz).date()
 
     #Le seteo el nuevo estado al casting (Publicado)
     casting_call_dict['state'] = "Publicado"
@@ -179,19 +223,21 @@ def publish_casting_call(casting_id: int, casting_call: CastingCallPublication,
     updated_casting_call = casting_call_repository.update_casting_call(casting_id, casting_call_dict)
 
     if not updated_casting_call:
-        raise HTTPException(status_code=404, detail=f"Casting call with id {casting_id} not found.")
+        raise HTTPException(status_code=404, 
+                            detail=f"Casting call with id {casting_id} not found.")
 
     return updated_casting_call
 
 @router.patch("/pause/{casting_id}")
-def stop_casting_call(casting_id: int, casting_call: CastingCallChangeState, 
-                         current_user: models.User = Depends(oauth2.get_current_user), 
+def stop_casting_call(casting_id: int, casting_call: CastingCallChangeState,
                          db: Session = Depends(get_db)) -> CastingCallChangeState:
     
     if casting_call.state == "Finalizado":
-        raise HTTPException(status_code=400, detail="The casting cannot be paused because it has already ended.")
+        raise HTTPException(status_code=400, 
+                            detail="The casting cannot be paused because it has already ended.")
     elif casting_call.state == "Borrador":
-        raise HTTPException(status_code=400, detail="The casting cannot be paused because it hasn't been published yet.")
+        raise HTTPException(status_code=400, 
+                            detail="The casting cannot be paused because it hasn't been published yet.")
 
     casting_call_repository = CastingCallRepository(db)
 
@@ -203,17 +249,18 @@ def stop_casting_call(casting_id: int, casting_call: CastingCallChangeState,
     updated_casting_call = casting_call_repository.update_casting_call(casting_id, casting_call_dict)
 
     if not updated_casting_call:
-        raise HTTPException(status_code=404, detail=f"Casting call with id {casting_id} not found.")
+        raise HTTPException(status_code=404, 
+                            detail=f"Casting call with id {casting_id} not found.")
 
     return updated_casting_call
 
 @router.patch("/finish/{casting_id}")
 def finish_casting_call(casting_id: int, casting_call: CastingCallChangeState, 
-                         current_user: models.User = Depends(oauth2.get_current_user), 
                          db: Session = Depends(get_db)) -> CastingCallChangeState:
     
     if casting_call.state == "Borrador":
-        raise HTTPException(status_code=400, detail="The casting cannot be finished because it hasn't been published yet.")
+        raise HTTPException(status_code=400, 
+                            detail="The casting cannot be finished because it hasn't been published yet.")
 
     casting_call_repository = CastingCallRepository(db)
 
@@ -226,18 +273,19 @@ def finish_casting_call(casting_id: int, casting_call: CastingCallChangeState,
 
     if not updated_casting_call:
         if "Not Found" in error_message:
-            raise HTTPException(status_code=404, detail=f"Casting call with id {casting_id} not found.")
+            raise HTTPException(status_code=404, 
+                                detail=f"Casting call with id {casting_id} not found.")
         else:
-            raise HTTPException(status_code=505, detail=f"Casting call with id {casting_id} not found.")
+            raise HTTPException(status_code=500, 
+                                detail="Internal Server Error")
 
     return updated_casting_call
 
 @router.get("/{casting_id}")
-def get_casting_call(casting_id: int, current_user: models.User = Depends(oauth2.get_current_user), 
+def get_casting_call(casting_id: int, 
                         db: Session = Depends(get_db)) -> CastingCallResponse:
     
     casting_call_repository = CastingCallRepository(db)
-
     casting_call = casting_call_repository.get_casting_call_by_id(casting_id)
 
     if not casting_call:
@@ -255,9 +303,9 @@ async def update_casting_call(casting_id: int,
                         project_id: int = Form(...),
                         remuneration_type: str = Form(...),
                         casting_roles: List[str] = Form(...),
-                        deleted_casting_call_photos: str = Form(None), #Viene con un str con el url de cada photo separadas por comas
+                        #Viene con un str con el url de cada photo separadas por comas:
+                        deleted_casting_call_photos: str = Form(None), 
                         added_casting_call_photos: List[UploadFile] = File(None),
-                        current_user: models.User = Depends(oauth2.get_current_user), 
                         db: Session = Depends(get_db)):
     
     casting_call_repository = CastingCallRepository(db)
@@ -265,9 +313,11 @@ async def update_casting_call(casting_id: int,
     role_repository = RoleRepository(db)
 
     if casting_state == "Publicado":
-        raise HTTPException(status_code=400, detail="The casting must be paused to be updated.")
+        raise HTTPException(status_code=400, 
+                            detail="The casting must be paused to be updated.")
     if casting_state == "Finalizado":
-        raise HTTPException(status_code=400, detail="The casting has finished and cant be edited.")
+        raise HTTPException(status_code=400, 
+                            detail="The casting has finished and cant be edited.")
 
     if not added_casting_call_photos: added_casting_call_photos = []
     if not deleted_casting_call_photos or deleted_casting_call_photos == '""': #Puede llegar a venir con un str que es ""
@@ -277,7 +327,8 @@ async def update_casting_call(casting_id: int,
 
     #Validamos que haya enviado entidades que existen en la bdd
     if not project_repository.get_project_by_id(project_id):
-        raise HTTPException(status_code=404, detail=f"Project with id {project_id} not found.")
+        raise HTTPException(status_code=404, 
+                            detail=f"Project with id {project_id} not found.")
 
     #Validacion y armado de lista de roles
     roles_list = []
@@ -286,11 +337,13 @@ async def update_casting_call(casting_id: int,
         
         #Validacion de campos requeridos por cada rol
         if not role.get('role_id'):
-            raise HTTPException(status_code=400, detail="role_id is required for each role.")
+            raise HTTPException(status_code=400, 
+                                detail="role_id is required for each role.")
 
         #Validacion de ids existentes en la bdd
         if not role_repository.get_role_by_id(role["role_id"]):
-            raise HTTPException(status_code=404, detail=f"Role with id {role['role_id']} not found.")
+            raise HTTPException(status_code=404, 
+                                detail=f"Role with id {role['role_id']} not found.")
 
         roles_list.append(role)
 
@@ -301,7 +354,8 @@ async def update_casting_call(casting_id: int,
     for photo_url in deleted_casting_call_photos:
         photo_name = photo_url.split('/')[-1] #extraemos de la url solo el nombre con su
         if not await storage_manager.delete_file(filepath, photo_name):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Invalid file {photo_name} for deleting.")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                                detail=f"Invalid file {photo_name} for deleting.")
         deleted_photos_names.append(photo_name)
 
     #TODO: si falla update de casting call se deben eliminar las fotos agregadas

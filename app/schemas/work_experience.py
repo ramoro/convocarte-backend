@@ -1,7 +1,6 @@
 from pydantic import BaseModel, model_validator, field_validator
 from datetime import date
 from typing import Optional, Union
-from models import WorkExperience
 from dateutil import parser
 
 class WorkExperienceBase(BaseModel):
