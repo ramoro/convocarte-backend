@@ -141,7 +141,7 @@ def step_impl(context):
 
 @when('I try to edit project name, project description and role name')
 def step_impl(context):
-    url = settings.backend_url + "/projects/{project_id}" 
+    url = settings.backend_url + "/projects/{project_id}"
     updating_data = {field["field"]: field["value"] for field in context.table}
 
     role_data = {"name": updating_data["new_role_name"]}
