@@ -31,3 +31,17 @@ Feature: Casting Call Creation
     | remuneration_type         | Remunerado |
     Then no casting call should be created in the system
     And the user should be notified that the casting call must have at least one role associated
+
+  Scenario: Unsuccessful casting call creation with one role without a form template assigned
+    Given Im logged in on the platform with my account
+    | field                | value                |
+    | fullname             | Frodo Bolson         |
+    | email                | frodohobbit@lord.com |
+    | password             | Frodo123*            |
+    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    When I create a casting call associating the role "Neo" without assigning a form template to it
+    | field                     | value                      |
+    | title                     | Searching Neo For Matrix 4 |
+    | remuneration_type         | Remunerado |
+    Then no casting call should be created in the system
+    And the user should be notified that each role must have a form template assigned
