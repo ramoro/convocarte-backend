@@ -1,6 +1,5 @@
 from fastapi import HTTPException, Depends, APIRouter, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import RedirectResponse
 from repository.user import UserRepository
 from schemas.user import CreateUser, UpdateUser, UserResponse, ForgetPasswordRequest, ResetForgetPassword ,UserFullResponse, DeleteUserFile
 from database import get_db
@@ -8,11 +7,8 @@ from starlette import status
 from starlette.responses import Response
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from fastapi.responses import JSONResponse
 from fastapi import File, UploadFile
-from fastapi.staticfiles import StaticFiles
 from typing import Optional
-from PIL import Image
 from config import settings
 from storage_managers.local_storage_manager import LocalStorageManager
 from storage_managers.cloud_storage_manager import CloudStorageManager
@@ -167,7 +163,9 @@ async def create_image(file: UploadFile = File(...),
     #Solo se indica la redimension en el caso de las fotos de la galeria
     #TODO: eliminar foto almacenada si falla update_user del repository
     if field_name in USER_SHOTS_ATTRIBUTES:
-        name_to_store, file_url = await storage_manager.store_file(extension, filepath, file, True, 600, 650, existing_file=current_user.profile_picture)
+        name_to_store, file_url = await storage_manager.store_file(extension, filepath, file, 
+                                                                   True, 600, 650, 
+                                                                   existing_file=current_user.profile_picture)
     else:
         name_to_store, file_url = await storage_manager.store_file(extension, filepath, file, False)
         
@@ -187,8 +185,9 @@ async def create_image(file: UploadFile = File(...),
             'filename': file_url } #'image': img_str}
 
 @router.patch("/delete-file", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_user_file(file_data: DeleteUserFile, current_user: models.User = Depends(oauth2.get_current_user),
-                                db: Session = Depends(get_db)):
+async def delete_user_file(file_data: DeleteUserFile, 
+                            current_user: models.User = Depends(oauth2.get_current_user),
+                            db: Session = Depends(get_db)):
     file_path = ''
     if file_data.field_name == 'cv':
         file_path = settings.cvs_path
@@ -227,7 +226,8 @@ async def update_cv(file: UploadFile = File(...),
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Invalid old file name.")
     #Corregir el file_url que se genera para el cv, ya que tiene que tener el path de download
     #TODO: si falla user_repository.update_user se debe eliminar el archivo almacenado
-    name_to_store_in_db, file_url = await storage_manager.store_file(extension, filepath, file, False, existing_file=current_user.cv)
+    name_to_store_in_db, file_url = await storage_manager.store_file(extension, filepath, 
+                                                                    file, False, existing_file=current_user.cv)
     
     user_repository = UserRepository(db)
     user_repository.update_user(current_user.id, {"cv": name_to_store_in_db})
@@ -238,11 +238,7 @@ async def update_cv(file: UploadFile = File(...),
 @router.get("/", response_model=List[UserResponse])
 def list_users(db: Session = Depends(get_db), current_user: models.User = 
                 Depends(oauth2.get_current_user)):
-    print(current_user.email)
-    #cursor.execute("""SELECT * FROM users """)
-    #all_users = cursor.fetchall()
     all_users = db.query(models.User).all()
-    #return {"data": all_users}
     return all_users
 
 

@@ -1,5 +1,5 @@
 import models
-from sqlalchemy.orm import Session, joinedload, subqueryload
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_
 
 class CastingCallRepository:
@@ -64,10 +64,12 @@ class CastingCallRepository:
         return new_casting_call
     
     def get_casting_calls_by_user_id(self, user_id):
-        return self.db.query(models.CastingCall).filter((models.CastingCall.owner_id == user_id)).all()
+        return self.db.query(models.CastingCall).\
+            filter((models.CastingCall.owner_id == user_id)).all()
     
     def update_casting_call(self, casting_call_id, updated_casting_call):
-        casting_call_query = self.db.query(models.CastingCall).filter(models.CastingCall.id == casting_call_id)
+        casting_call_query = self.db.query(models.CastingCall).\
+                            filter(models.CastingCall.id == casting_call_id)
 
         if not casting_call_query.first():
             return None
@@ -112,7 +114,8 @@ class CastingCallRepository:
 
         try:
             # Obtener el casting existente
-            casting_call_query = self.db.query(models.CastingCall).filter(models.CastingCall.id == casting_call_id)
+            casting_call_query = self.db.query(models.CastingCall).\
+                                filter(models.CastingCall.id == casting_call_id)
             current_casting_call = casting_call_query.first()
             if not current_casting_call:
                 return None, f"Casting call with id {casting_call_id} not found." 
@@ -133,7 +136,8 @@ class CastingCallRepository:
 
             #Actualiza los roles expuestos
             for role in updated_roles:
-                self.db.query(models.ExposedRole).filter(models.ExposedRole.id == role['id']).update(role, synchronize_session=False)
+                self.db.query(models.ExposedRole).\
+                filter(models.ExposedRole.id == role['id']).update(role, synchronize_session=False)
 
             self.db.commit()
             return updated_casting_call, ""
@@ -147,7 +151,8 @@ class CastingCallRepository:
         """Recibe el id del casting y el casting ya actualizado. Actualiza el proyecto que tiene asociado en estado
         de Sin uso en caso de que el proyecto no haya quedado usado en otro casting. Devuelve el casting actualizado."""
         try:
-            casting_call_query = self.db.query(models.CastingCall).filter(models.CastingCall.id == casting_call_id)
+            casting_call_query = self.db.query(models.CastingCall).\
+                                filter(models.CastingCall.id == casting_call_id)
             casting_call = casting_call_query.first()
             
             if not casting_call:
@@ -183,7 +188,8 @@ class CastingCallRepository:
                     models.CastingCall.state == "Publicado",  # Solo castings publicados
                     models.CastingCall.deleted_at == None  # No eliminados
                 )
-            ).options(joinedload(models.CastingCall.project), joinedload(models.CastingCall.exposed_roles))  # Cargar projecto y roles asociados a CastingCall
+                # Cargar projecto y roles asociados a CastingCall:
+            ).options(joinedload(models.CastingCall.project), joinedload(models.CastingCall.exposed_roles))  
 
             # Filtrar por date_order (Ascendente o Descendente)
             if casting_filters.date_order == "Ascendente":

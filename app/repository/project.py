@@ -61,8 +61,10 @@ class ProjectRepository:
     
     def delete_project(self, project_id):
         try:
-            #Primero se eliminan todos los castings que estan asociados al proyecto (en teoria deberian estar todos finalizados)
-            associated_castings = self.db.query(models.CastingCall).filter((models.CastingCall.project_id == project_id)).all()
+            #Primero se eliminan todos los castings que estan asociados 
+            # al proyecto (en teoria deberian estar todos finalizados)
+            associated_castings = self.db.query(models.CastingCall).\
+            filter((models.CastingCall.project_id == project_id)).all()
             
             for casting in associated_castings:
                 casting.deleted_at = datetime.now(timezone.utc)

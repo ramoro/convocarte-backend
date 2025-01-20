@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from starlette import status
-from starlette.responses import Response
 from sqlalchemy.orm import Session
 from database import get_db
 from schemas.auth import UserLogin
@@ -21,10 +20,12 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
         ).first()
     
     if not user or not utils.verify(user_credentials.password, user.password):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
+                            detail="Invalid Credentials")
     
     if not user.is_verified:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unverified Account")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
+                            detail="Unverified Account")
     
     access_token = oauth2.create_access_token(data = {"user_id": user.id})
 
@@ -34,8 +35,9 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
         if "localhost" in settings.backend_url:
             profile_picture_path = settings.backend_url + settings.profile_pictures_path[1:] + user.profile_picture
         else:
-            profile_picture_path = CLOUD_STORAGE_URL + user.profile_picture.split('.')[0] #removemos la extension ya que solo necesitamos el id de la foto en el google drive
-            print("profile picture path", profile_picture_path)
+            #removemos la extension ya que solo necesitamos el id de la foto en el google drive
+            profile_picture_path = CLOUD_STORAGE_URL + user.profile_picture.split('.')[0] 
 
-    return {"id": user.id, "email": user.email, "fullname": user.fullname, "profile_picture": profile_picture_path, "token": access_token, "token_type": "bearer"}
+    return {"id": user.id, "email": user.email, "fullname": user.fullname, 
+            "profile_picture": profile_picture_path, "token": access_token, "token_type": "bearer"}
 
