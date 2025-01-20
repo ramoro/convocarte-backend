@@ -5,7 +5,8 @@ from routers import user, auth, form_template, academic_experience, work_experie
 from fastapi.staticfiles import StaticFiles
 from config import settings
 import models
-
+import time
+ 
 app = FastAPI()
 
 origins = [
@@ -21,6 +22,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+time.sleep(15)
 
 models.Base.metadata.create_all(bind=engine)
 
