@@ -39,6 +39,7 @@ def after_scenario(context, scenario):
         session.execute("DELETE FROM roles;")
         session.execute("DELETE FROM casting_calls;")
         session.execute("DELETE FROM projects;")
+        session.execute("DELETE FROM users;")
         
         # Confirmar los cambios
         session.commit()
