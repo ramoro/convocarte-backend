@@ -48,6 +48,8 @@ class CastingCallRepository:
                 #del form generado
                 role.pop('form_template') 
                 role['form_id'] = form.id
+                if role['has_limited_spots']:
+                    role['occupied_spots'] = 0
                 new_role = models.ExposedRole(**role)
                 self.db.add(new_role)
 
