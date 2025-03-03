@@ -89,6 +89,8 @@ class CastingCallChangeState(BaseModel):
 class CastingCallProject(BaseModel):
     id: int
     name: str
+    category: str
+    region: str
 
 class ExposedRoleForm(BaseModel):
     id: int
@@ -106,6 +108,7 @@ class CastingCallExposedRole(CastingCallExposedRoleInfo):
 class CastingCallResponse(CastingCallPreviewResponse):
     description: Optional[str] = None
     state: str
+    expiration_date: Optional[date] = None
     project: CastingCallProject
     exposed_roles: List[CastingCallExposedRole]
 
