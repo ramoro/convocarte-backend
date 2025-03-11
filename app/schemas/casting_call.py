@@ -17,6 +17,7 @@ class CastingCallExposedRoleInfo(BaseModel):
     additional_requirements: Optional[str] = None
     has_limited_spots: bool
     spots_amount: Optional[int] = None
+    occupied_spots: Optional[int] = None
     disabled: bool
 
 #class CastingCallRoleCreation(CastingCallRole):
