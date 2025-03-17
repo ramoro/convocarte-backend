@@ -39,9 +39,6 @@ async def create_casting_postulation(form_id: int = Form(...),
                         postulation_photos: List[UploadFile] = File(None), 
                         current_user: models.User = Depends(oauth2.get_current_user), 
                         db: Session = Depends(get_db)):
-    print(postulation_data)
-    print(postulation_cv_file)
-    print(postulation_photos)
     try:
         postulation_dict = json.loads(postulation_data)  # Convertir a diccionario
     except json.JSONDecodeError:
