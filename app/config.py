@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     cvs_path: str = "./static/curriculums/"
     gallery_shots_path: str = "./static/gallery_shots/"
     casting_call_photos_path: str = "./static/casting_call_photos/"
+    postulation_files_path: str = "./static/postulation_files/"
     backend_url: str
     frontend_url: str = "http://localhost:8080"
     google_credentials: str = ""

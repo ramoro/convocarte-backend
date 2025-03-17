@@ -17,6 +17,7 @@ class CastingCallExposedRoleInfo(BaseModel):
     additional_requirements: Optional[str] = None
     has_limited_spots: bool
     spots_amount: Optional[int] = None
+    occupied_spots: Optional[int] = None
     disabled: bool
 
 #class CastingCallRoleCreation(CastingCallRole):
@@ -89,6 +90,8 @@ class CastingCallChangeState(BaseModel):
 class CastingCallProject(BaseModel):
     id: int
     name: str
+    category: str
+    region: str
 
 class ExposedRoleForm(BaseModel):
     id: int
@@ -106,6 +109,7 @@ class CastingCallExposedRole(CastingCallExposedRoleInfo):
 class CastingCallResponse(CastingCallPreviewResponse):
     description: Optional[str] = None
     state: str
+    expiration_date: Optional[date] = None
     project: CastingCallProject
     exposed_roles: List[CastingCallExposedRole]
 

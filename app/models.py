@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Numeric
+import json
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Numeric, Text
 from database import Base
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP, Date
@@ -186,11 +187,12 @@ class CastingCall(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     deleted_at = Column(TIMESTAMP(timezone=True), index=True)
 
-    project = relationship("Project", back_populates="casting_calls")  # Relación con la tabla Project
-
+    # Relación inversa con Project
+    project = relationship("Project", back_populates="casting_calls")  
     # Relación inversa con ExposedRole
     exposed_roles = relationship("ExposedRole", back_populates="casting_call")
-
+    # Relación inversa con CastingPostulation
+    casting_postulations = relationship("CastingPostulation", back_populates="casting_call")
 
 class Form(Base):
     __tablename__ = "forms"
@@ -237,11 +239,35 @@ class ExposedRole(Base):
     additional_requirements = Column(String)
     has_limited_spots = Column(Boolean, nullable=False)
     spots_amount = Column(Integer)
+    occupied_spots = Column(Integer)
 
     casting_call = relationship("CastingCall", back_populates="exposed_roles")  # Relación con CastingCall
     role = relationship("Role", back_populates="exposed_roles")  # Relación con Role
     form = relationship("Form", back_populates="exposed_roles")  # Relación con Form
-
-
+    
+    casting_postulations = relationship("CastingPostulation", back_populates="exposed_role")
 
     
+class CastingPostulation(Base):
+    __tablename__ = "casting_postulations"
+    id = Column(Integer, primary_key=True, nullable=False)
+    owner_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
+    casting_call_id = Column(Integer, ForeignKey('casting_calls.id', ondelete="CASCADE"), nullable=False, index=True)
+    exposed_role_id = Column(Integer, ForeignKey('exposed_roles.id', ondelete="CASCADE"), nullable=False, index=True)
+    state = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    deleted_at = Column(TIMESTAMP(timezone=True))
+    postulation_data = Column(Text)
+
+    # Relaciones
+    casting_call = relationship("CastingCall", back_populates="casting_postulations")
+    exposed_role = relationship("ExposedRole", back_populates="casting_postulations")
+
+    # Métodos para el manejo de postulation_data que se almacenara como JSON en la bdd
+    def set_postulation_data(self, data):
+        """Convierte un dict en JSON string antes de almacenarlo."""
+        self.postulation_data = json.dumps(data)
+
+    def get_postulation_data(self):
+        """Convierte un JSON string de vuelta a dict."""
+        return json.loads(self.postulation_data) if self.postulation_data else None
