@@ -145,7 +145,7 @@ def make_postulation(context):
         context.exposed_role_id = exposed_role.id
         postulation_data = {
             "form_id": exposed_role.form_id,
-            "postulation_data": {"Instagram": "https://www.instagram.com/username"}
+            "postulation_data": json.dumps({"Instagram": "https://www.instagram.com/username"})
         }
 
         headers = {
@@ -170,7 +170,9 @@ def step_impl(context, role_name):
 def step_impl(context):
     session = SessionLocal()
     try:
-        postulation = context.database.query(models.CastingPostulation).filter(and_(
+        postulation = context.database.query(models.CastingPostulation).join(
+            models.Project, models.CastingPostulation.casting_call_id == models.Project.id
+        ).filter(and_(
                 models.CastingPostulation.casting_call_id == context.casting_call_id,
                 models.Project.owner_id == context.user_id
             )).first()
