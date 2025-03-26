@@ -8,7 +8,6 @@ import json
 from datetime import datetime, timedelta
 from repository.exposed_role import ExposedRoleRepository
 
-
 @given('there is a project with name "{project_name}" with an associated role called "{role_name}"')
 def step_impl(context, project_name, role_name):
     url = settings.backend_url + "/form-templates/"
