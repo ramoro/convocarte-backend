@@ -1,4 +1,4 @@
-Feature: Project Creation
+Feature: Project Elimination
   As a casting director
   I want to be able to delete a project that im not going to do
   So I can have a better visualization of the rest of my projects
