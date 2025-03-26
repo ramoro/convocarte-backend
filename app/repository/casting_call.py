@@ -280,11 +280,9 @@ class CastingCallRepository:
         try:
             casting_call = self.db.query(models.CastingCall).\
                 filter(models.CastingCall.id == casting_call_id).first()
-            print(casting_call)
             if casting_call:
                 # Se eliminan los roles expuestos en el casting y sus
                 # forms generados
-                print(casting_call.exposed_roles)
                 for exposed_role in casting_call.exposed_roles:
                     if exposed_role.form:
                         self.db.delete(exposed_role.form)
@@ -301,6 +299,5 @@ class CastingCallRepository:
             else:
                 return False
         except Exception as e:
-            print(e)
             self.db.rollback()
             return False
