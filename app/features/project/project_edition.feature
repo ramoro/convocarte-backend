@@ -1,4 +1,4 @@
-Feature: Project Creation
+Feature: Project Edition
   As a casting director
   I want to be able to edit a project and its roles so 
   So I can update it if I change my mind about what the project will be like and what roles will make it up

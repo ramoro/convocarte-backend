@@ -205,7 +205,7 @@ class Form(Base):
     deleted_at = Column(TIMESTAMP(timezone=True), index=True)
 
     # Define la relación con FormField
-    form_fields = relationship("FormField", back_populates="form")
+    form_fields = relationship("FormField", back_populates="form", cascade="all, delete-orphan")
     # Relación inversa con ExposedRole
     exposed_roles = relationship("ExposedRole", back_populates="form")
 

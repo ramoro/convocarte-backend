@@ -584,10 +584,63 @@ def step_impl(context, new_casting_title_failed, role_name, min_age_required):
 
 @then('the user should be notified that the casting must be paused to be updated')
 def step_impl(context):
-    assert f"casting must be paused to be updated" in context.response.text, "Expected error message not found."
+    assert "casting must be paused to be updated" in context.response.text, "Expected error message not found."
 
 @then('the user should be notified that the casting has finished and cant be edited')
 def step_impl(context):
-    assert f"casting has finished and cant be edited" in context.response.text, "Expected error message not found."
+    assert "casting has finished and cant be edited" in context.response.text, "Expected error message not found."
 
+@when('I try to delete the casting call')
+def step_impl(context):
+    url = settings.backend_url + "/casting-calls/{casting_id}"
+    session = SessionLocal()
+    try:
+        headers = {
+            "Authorization": f"Bearer {context.token}"
+        }
+        response = requests.delete(url.format(casting_id=context.casting_call_id), headers=headers)
+        context.response = response
+    finally:
+        session.close()
 
+@then('the casting call should successfully desappear from the system')
+def step_impl(context):
+    session = SessionLocal()
+    try:
+        casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
+        exposed_roles = context.database.query(models.ExposedRole).filter(models.ExposedRole.casting_call_id == context.casting_call_id).all()
+
+        assert casting_call.deleted_at is not None, "Casting call was not deleted."
+        assert len(exposed_roles) == 0, "Casting call was not deleted with its exposed roles."
+
+    finally:
+        session.close()
+
+@then('the casting call forms should desappear from the system')
+def step_impl(context):
+    session = SessionLocal()
+    try:
+        forms = context.database.query(models.Form).filter(models.Form.casting_call_id == context.casting_call_id).all()
+        assert len(forms) == 0, "Casting call forms were not deleted."
+    finally:
+        session.close()
+
+@then('the casting call should not be eliminated from the system')
+def step_impl(context):
+    session = SessionLocal()
+    try:
+        casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
+        exposed_roles = context.database.query(models.ExposedRole).filter(models.ExposedRole.casting_call_id == context.casting_call_id).all()
+        
+        assert casting_call.deleted_at is None, "Casting call was deleted."
+        assert len(exposed_roles) > 0, "Casting call exposed roles were deleted"
+
+    finally:
+        session.close()
+@then('the user should be notified that the casting call cant be deleted cause its published')
+def step_impl(context):
+    assert "casting call cant be deleted cause its published" in context.response.text, "Expected error message not found."
+
+@then('the user should be notified that the casting call cant be deleted cause its paused')
+def step_impl(context):
+    assert "casting call cant be deleted cause its paused" in context.response.text, "Expected error message not found."
