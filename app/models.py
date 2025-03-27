@@ -237,6 +237,7 @@ class ExposedRole(Base):
     additional_requirements = Column(String)
     has_limited_spots = Column(Boolean, nullable=False)
     spots_amount = Column(Integer)
+    occupied_spots = Column(Integer)
 
     casting_call = relationship("CastingCall", back_populates="exposed_roles")  # Relación con CastingCall
     role = relationship("Role", back_populates="exposed_roles")  # Relación con Role
