@@ -56,7 +56,6 @@ def step_impl(context):
 
 @then('the user should be notified that they already have a project with that name')
 def step_impl(context):
-    print(context.response.text)
     assert "The user already has a project named" in context.response.text, "Expected error message not found"
 
 @when('I create a project named "{project_name}" with two roles named "{role_name}"')

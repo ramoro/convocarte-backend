@@ -563,7 +563,6 @@ def step_impl(context, new_casting_title, role_name, min_age_required):
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
         #filtrar el rol con el id igual al updated_role_id del contexto
-        print(context.updated_role_id)
         updated_exposed_role = casting_call.exposed_roles[0]
         
         assert casting_call.title == new_casting_title, f"Casting call was not updated."
@@ -585,7 +584,6 @@ def step_impl(context, new_casting_title_failed, role_name, min_age_required):
 
 @then('the user should be notified that the casting must be paused to be updated')
 def step_impl(context):
-    print(context.response.text)
     assert f"casting must be paused to be updated" in context.response.text, "Expected error message not found."
 
 @then('the user should be notified that the casting has finished and cant be edited')
