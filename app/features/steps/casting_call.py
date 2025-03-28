@@ -70,6 +70,8 @@ def step_impl(context, project_name, role_name):
     }
     response = requests.post(url, json=project_data, headers=headers)
     context.responsejson = response.json()
+    print(f"Response JSON when create project: {context.responsejson}")
+
     context.project_id = context.responsejson["id"]
 
 @when('I create a casting call for the project "{project_name}" associating the role "{role_name}" to the form template "{template_title}"')
