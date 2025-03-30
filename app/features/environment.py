@@ -30,25 +30,47 @@ def after_scenario(context, scenario):
     """Limpieza después de cada escenario."""
     session = context.database
     try:
-        # Deshabilitar restricciones de clave foránea temporalmente
-        session.execute("SET session_replication_role = 'replica';")
+        # Deshabilitar restricciones de clave foránea
+        session.execute("SET CONSTRAINTS ALL DEFERRED")
+        session.commit()
         
-        # Borrar registros de las tablas en orden correcto
+        # Obtener todas las tablas en el orden correcto para eliminación
         tables = [
-            "exposed_roles", "form_fields", "forms",
-            "form_template_fields", "form_templates", "roles",
-            "casting_calls", "projects"
+            "casting_postulations", "exposed_roles", 
+            "form_fields", "forms", "form_template_fields", 
+            "form_templates", "roles", "casting_calls", 
+            "projects", "work_experiences", "academic_experiences", 
+            "users"
         ]
         
         for table in tables:
-            session.execute(f"DELETE FROM {table};")
+            try:
+                session.execute(f"TRUNCATE TABLE {table} CASCADE")
+                session.commit()
+            except Exception as e:
+                session.rollback()
+                print(f"Error truncating {table}: {str(e)}")
+                raise
         
-        # Restaurar restricciones
-        session.execute("SET session_replication_role = 'origin';")
+        # Reiniciar secuencias
+        session.execute("""
+            DO $$ 
+            DECLARE 
+                seq_name text;
+            BEGIN 
+                FOR seq_name IN SELECT sequence_name FROM information_schema.sequences 
+                               WHERE sequence_schema = 'public' 
+                LOOP 
+                    EXECUTE 'ALTER SEQUENCE ' || seq_name || ' RESTART WITH 1'; 
+                END LOOP; 
+            END $$;
+        """)
         session.commit()
+        
     except Exception as e:
         session.rollback()
-        raise e
+        print(f"Error in after_scenario: {str(e)}")
+        raise
     finally:
         session.close()
 # def after_scenario(context, scenario):
