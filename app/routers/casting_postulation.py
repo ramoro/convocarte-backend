@@ -27,6 +27,8 @@ router = APIRouter(
     dependencies=[Depends(oauth2.get_current_user)]
 )
 
+PHOTO_TYPES_NAMES=["Foto Plano Pecho", "Foto Plano General", "Foto un Perfil", "Foto Adicional 1", "Foto Adicional 2"]
+
 #El nombre del cv y las fotos para accederlos desde el front
 #seran almacenadados en postulation_data, donde la clave sera
 #el nombre con el que venga el archivo
@@ -80,6 +82,9 @@ async def create_casting_postulation(form_id: int = Form(...),
     filepath = settings.postulation_files_path
 
     #Almacenamiento del Curriculum si es que viene con cv
+    #Si no viene con cv pero viene con el campo Curriculum lleno
+    #Significa que viene con la url del cv que tiene por defecto el usuario
+    #Se genera copia de ese file y se lo traslada a la carpeta de archivos de postulacion
     if postulation_cv_file:
         filename = postulation_cv_file.filename
         filename_without_extension = filename.split(".")[0]
@@ -93,7 +98,28 @@ async def create_casting_postulation(form_id: int = Form(...),
         name_to_store_in_db, cv_file_url = await storage_manager.store_file(extension, filepath, 
                                                                         postulation_cv_file, False)
         postulation_dict[filename_without_extension] = name_to_store_in_db
-
+    
+    elif "Curriculum" in postulation_dict and postulation_dict["Curriculum"]:
+         filename_to_copy = postulation_dict["Curriculum"].split('/')[-1]
+         #Para el caso en que se este almacenando los archivos con google Drive
+         #y viene el archivo con el id e info extra para poder descargarlo
+         #desde el drive
+         if "download" in filename_to_copy:
+             filename_to_copy = filename_to_copy.split('=')[-1]
+         new_name = storage_manager.copy_file(settings.cvs_path, filename_to_copy, 
+                                                 settings.postulation_files_path)
+         postulation_dict["Curriculum"] = new_name
+ 
+    #Por cada foto que este en la postulation_data
+    #significa que viene solo con su url, es decir, que venia
+    #ya sobrecargada del perfil del usuario. Simplemente hay que copiarla
+    for photo_type in PHOTO_TYPES_NAMES:
+        if photo_type in postulation_dict and postulation_dict[photo_type]:
+            filename_to_copy = postulation_dict[photo_type].split('/')[-1]
+            new_name = storage_manager.copy_file(settings.gallery_shots_path, filename_to_copy, 
+                                                    settings.postulation_files_path)
+            postulation_dict[photo_type] = new_name
+            
     #Almacenamiento de fotos de postulacion si es que hay
     if not postulation_photos: 
         postulation_photos = []
