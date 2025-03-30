@@ -75,3 +75,13 @@ class CloudStorageManager:
             print(f"Error details: {str(e)}")
             return False
 
+    def copy_file(self, source_folder_id, source_file_id, destiny_folder_id):
+        """Recibe el id de la carpeta fuente. Recibe el id en Google Drive del archivo
+        a copiarse y el id de la carpeta destino. Copia el archivo en esa carpeta
+        y devuelve el id del archivo generado."""
+        new_file = {'name': secrets.token_hex(10),
+                    'parents': [destiny_folder_id],
+                    }
+        copied_file = self.drive_service.files().copy(fileId=source_file_id, body=new_file).execute()
+        
+        return copied_file["id"]

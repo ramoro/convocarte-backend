@@ -2,6 +2,7 @@ from utils import resize_image
 from config import settings
 import secrets
 import os
+import shutil
 
 class LocalStorageManager:
 
@@ -46,3 +47,16 @@ class LocalStorageManager:
             return True
         else:
             return False
+        
+    def copy_file(self, source_path, filename_to_copy, destiny_path):
+        """Recibe un path con la ubicacion del archivo a copiar, el nombre del archivo mismo 
+        que necesita ser copiado, su ubicacion, y el path donde se va a almacenar la copia. 
+        Se genera un nuevo nombre para el archivo con un valor hexadecimal random y se copia
+        el archivo en el path de destino. Devuelve el nombre generado para el nuevo archivo."""
+        extension = filename_to_copy.split('.')[-1]
+        new_name = secrets.token_hex(10) + "." + extension
+
+        full_destiny_path = os.path.join(destiny_path, new_name)
+        shutil.copy(source_path + filename_to_copy, full_destiny_path)
+
+        return new_name
