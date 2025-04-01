@@ -38,7 +38,7 @@ jobs:
     
     - name: Check DB connection
       run: |
-      docker compose -f docker-compose.test.yml exec db pg_isready -U postgres
+        docker compose -f docker-compose.test.yml exec db pg_isready -U postgres
 
 
     # Step 4: Run Behave tests inside Docker
