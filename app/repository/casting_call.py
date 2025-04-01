@@ -1,7 +1,7 @@
 import models
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_
-
+from datetime import datetime, timezone
 class CastingCallRepository:
 
     def __init__(self, db: Session):
@@ -274,3 +274,30 @@ class CastingCallRepository:
         except Exception as e:
             print(f"Error occurred: {e}") 
             return None
+        
+    def delete_casting_call(self, casting_call_id):
+        try:
+            casting_call = self.db.query(models.CastingCall).\
+                filter(models.CastingCall.id == casting_call_id).first()
+            if casting_call:
+                # Se eliminan los roles expuestos en el casting y sus
+                # forms generados
+                for exposed_role in casting_call.exposed_roles:
+                    if exposed_role.form:
+                        self.db.delete(exposed_role.form)
+
+                    self.db.delete(exposed_role)
+                # Marco el CastingCall como eliminado con la fecha
+                # pero no lo borro de la bdd para tenerlo como historial
+                casting_call.deleted_at = datetime.now(timezone.utc)
+                casting_call.state = "Eliminado"
+                self.db.add(casting_call)
+
+                self.db.commit()
+                return True
+            else:
+                return False
+        except Exception as e:
+            print(e)
+            self.db.rollback()
+            return False

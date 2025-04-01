@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import HTTPException, Depends, APIRouter, Form
+from fastapi import HTTPException, Depends, APIRouter, Form, Response
 from database import get_db
 from starlette import status
 from sqlalchemy.orm import Session
@@ -379,3 +379,29 @@ async def update_casting_call(casting_id: int,
 
     return {'success': True, 'status_code': status.HTTP_200_OK,
             'casting_call_title': title, 'casting_call_id': casting_id }
+
+@router.delete("/{casting_call_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_casting_call(casting_call_id: int, db: Session = Depends(get_db)):
+    casting_call_repository = CastingCallRepository(db)
+
+    casting_call = casting_call_repository.get_casting_call_by_id(casting_call_id)
+
+    if not casting_call:
+        raise HTTPException(status_code=404, 
+                            detail=f"Casting call with id {casting_call_id} not found")
+    
+    if casting_call.state == "Publicado":
+        raise HTTPException(status_code=400, 
+                            detail="The casting call cant be deleted cause its published.")
+    
+    if casting_call.state == "Pausado":
+            raise HTTPException(status_code=400, 
+                        detail="The casting call cant be deleted cause its paused. Finish it first.")
+    
+    deleted_casting_call = casting_call_repository.delete_casting_call(casting_call_id)
+    
+    if not deleted_casting_call:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                            detail="An error occurred while deleting the casting call") 
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
