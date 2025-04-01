@@ -19,6 +19,7 @@ def step_when_register_account(context):
     data = {field["field"]: field["value"] for field in context.table}
     response = requests.post(url, json=data)
     context.response = response
+    assert response.status_code == 5001, f"Response: {response}"
     assert response.status_code == 201, f"Unexpected status code: {response.status_code}, response: {response.text}"
 
 @then('an account with the email "{email}" is created in the system')
