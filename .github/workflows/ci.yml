@@ -34,7 +34,12 @@ jobs:
     - name: Wait for the app to be ready
       run: |
         echo "Waiting for the app to be ready..."
-        sleep 15
+        sleep 60
+    
+    - name: Check DB connection
+      run: |
+      docker compose -f docker-compose.test.yml exec db pg_isready -U postgres
+
 
     # Step 4: Run Behave tests inside Docker
     # Necesario pasar las variables de entorno del SMTP_SERVER para que no falle
