@@ -68,7 +68,8 @@ class CastingCallRepository:
     
     def get_casting_calls_by_user_id(self, user_id):
         return self.db.query(models.CastingCall).\
-            filter((models.CastingCall.owner_id == user_id)).all()
+            filter(and_(models.CastingCall.owner_id == user_id,
+                        models.CastingCall.deleted_at is None)).all()
     
     def update_casting_call(self, casting_call_id, updated_casting_call):
         casting_call_query = self.db.query(models.CastingCall).\
