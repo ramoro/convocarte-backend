@@ -35,11 +35,41 @@ class CastingPostulationRepository:
             self.db.query(models.CastingPostulation)
             .filter(models.CastingPostulation.id == casting_postulation_id)
             .options(
-                joinedload(models.CastingPostulation.casting_call),
+                joinedload(models.CastingPostulation.casting_call)
+                .joinedload(models.CastingCall.project),
                 joinedload(models.CastingPostulation.exposed_role)
                 .joinedload(models.ExposedRole.role)
-            )  
+            )
             .first()
         )
     
         return casting_postulation
+    
+    def get_casting_postulations_by_user(self, user_id):
+        postulations = (
+            self.db.query(
+                models.CastingPostulation.id,
+                models.CastingPostulation.state,
+                models.CastingPostulation.created_at,
+                # models.CastingCall.title,
+                # models.CastingCall.description,
+                models.CastingCall.remuneration_type,
+                # models.CastingCall.status,
+                # models.CastingCall.photos,
+                # models.Role.name,
+                # models.Role.description,
+                models.Project.name.label("project_name"),
+                models.Project.category,
+                models.Project.region,
+            )
+            .join(models.CastingPostulation.exposed_role)
+            .join(models.ExposedRole.casting_call)
+            .join(models.CastingCall.project)
+            .filter(and_(models.CastingPostulation.owner_id == user_id,
+                         models.CastingPostulation.deleted_at == None))
+            .order_by(models.CastingPostulation.created_at.desc())
+            .all()
+        )
+
+        result = [dict(row._mapping) for row in postulations]
+        return result

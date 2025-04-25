@@ -2,17 +2,18 @@ import json
 from typing import List
 from fastapi import APIRouter, Depends, Form, HTTPException, File, UploadFile
 from requests import Session
+from routers.casting_call import add_path_to_photo
 import oauth2
 import models
 from database import get_db
 from storage_managers.local_storage_manager import LocalStorageManager
-from storage_managers.cloud_storage_manager import CloudStorageManager, CLOUD_STORAGE_URL
+from storage_managers.cloud_storage_manager import CloudStorageManager
 from config import settings
 from starlette import status
 from repository.exposed_role import ExposedRoleRepository
 from repository.casting_postulation import CastingPostulationRepository
 from repository.form import FormRepository
-from schemas.casting_postulation import CastingPostulationResponse
+from schemas.casting_postulation import CastingPostulationResponse, CastingPostulationPreview
 
 
 if "localhost" in settings.backend_url:
@@ -166,5 +167,17 @@ def get_casting_postulation(postulation_id: int,
     if not casting_postulation:
         raise HTTPException(status_code=404, detail=f"Casting postulation with id {postulation_id} not found.")
     
-    #TODO:Agregar path a fotos y CV en postulation_data devuelta    
+    #TODO:Agregar path a fotos y CV en postulation_data devuelta
+    add_path_to_photo(casting_postulation.casting_call)
+    print(casting_postulation.casting_call.casting_photos)
+
     return casting_postulation
+
+@router.get("/")
+def get_user_casting_postulations(db: Session = Depends(get_db), 
+        current_user: models.User = Depends(oauth2.get_current_user)) -> List[CastingPostulationPreview]:
+    
+    casting_postulation_repository = CastingPostulationRepository(db)
+    casting_postulations = casting_postulation_repository.get_casting_postulations_by_user(current_user.id)
+    
+    return casting_postulations

@@ -43,6 +43,7 @@ class CastingCallPreviewResponse(BaseModel):
     remuneration_type: str
     state: str
     casting_photos: Optional[List[str]] = None
+    description: Optional[str] = None
     created_at: datetime
     publication_date: Optional[date]
     project: Optional[ProjectResponse] = None
