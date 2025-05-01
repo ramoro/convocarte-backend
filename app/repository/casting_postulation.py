@@ -46,6 +46,8 @@ class CastingPostulationRepository:
         return casting_postulation
     
     def get_casting_postulations_by_user(self, user_id):
+        """Recibe el id de un usuario y devuelve todas las postulaciones que ha hecho
+        con datos del casting y del proyecto."""
         postulations = (
             self.db.query(
                 models.CastingPostulation.id,
@@ -73,3 +75,35 @@ class CastingPostulationRepository:
 
         result = [dict(row._mapping) for row in postulations]
         return result
+
+    def get_casting_postulations_by_casting_call(self, casting_call_id):
+        """Recibe el id de un casting y devuelve todas las postulaciones realizadas a ese casting."""
+        postulations = (
+            self.db.query(models.CastingPostulation)
+            .filter(and_(models.CastingPostulation.casting_call_id == casting_call_id,
+                        models.CastingPostulation.deleted_at == None,
+                        models.CastingPostulation.state != "Rechazada")) 
+                        #Diferenciar de rechazada por mensaje. 
+                        #Si se rechazo por mensaje, el casting sigue mostrando la postulacion,
+                        #por si se quiere volver a tener contacto. Rechazada asi solo
+                        #significa que se elimino de la lista de postulaciones del casting
+
+            .all()
+        )
+        return postulations
+    
+    def update_casting_postulation(self, casting_postulation_id, updated_casting_postulation):
+        """Recibe el id de una postulacion y un diccionaro con los datos a actualizar. Devuelve
+        None si no existe la postulacion, sino devuelve el objeto actualizado."""
+        print(casting_postulation_id)
+        casting_postulation_query = self.db.query(models.CastingPostulation).\
+                            filter(models.CastingPostulation.id == casting_postulation_id)
+
+        if not casting_postulation_query.first():
+            return None
+
+        casting_postulation_query.update(updated_casting_postulation, synchronize_session=False)
+        self.db.commit()
+    
+        # Retorna el registro actualizado
+        return casting_postulation_query.first()

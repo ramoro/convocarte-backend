@@ -12,8 +12,14 @@ from config import settings
 from starlette import status
 from repository.exposed_role import ExposedRoleRepository
 from repository.casting_postulation import CastingPostulationRepository
+from repository.casting_call import CastingCallRepository
 from repository.form import FormRepository
-from schemas.casting_postulation import CastingPostulationResponse, CastingPostulationPreview
+from schemas.casting_postulation import (CastingPostulationResponse, 
+                                        CastingPostulationPreview,
+                                        CastingPostulationPreviewExtraData, 
+                                        CastingPostulationUpdate)
+    
+
 
 
 if "localhost" in settings.backend_url:
@@ -175,9 +181,41 @@ def get_casting_postulation(postulation_id: int,
 
 @router.get("/")
 def get_user_casting_postulations(db: Session = Depends(get_db), 
-        current_user: models.User = Depends(oauth2.get_current_user)) -> List[CastingPostulationPreview]:
+    current_user: models.User = Depends(oauth2.get_current_user)) -> List[CastingPostulationPreviewExtraData]:
     
     casting_postulation_repository = CastingPostulationRepository(db)
     casting_postulations = casting_postulation_repository.get_casting_postulations_by_user(current_user.id)
     
     return casting_postulations
+
+@router.get("/postulations-by-casting-call/{casting_call_id}")
+def get_postulations_by_casting_call(casting_call_id: int, 
+    db: Session = Depends(get_db)) -> List[CastingPostulationPreview]:
+
+    casting_call_repository = CastingCallRepository(db)
+    casting_call = casting_call_repository.get_casting_call_by_id(casting_call_id)
+    if not casting_call:
+          raise HTTPException(status_code=404, 
+                    detail=f"Casting call with id {casting_call_id} not found.")
+    
+    casting_postulation_repository = CastingPostulationRepository(db)
+    casting_postulations = casting_postulation_repository.get_casting_postulations_by_casting_call(casting_call_id)
+
+    return casting_postulations
+
+@router.put("/{postulation_id}", status_code=status.HTTP_200_OK)
+async def update_casting_call(postulation_id: int, updated_postulation: CastingPostulationUpdate, db: Session = Depends(get_db)):
+
+    casting_postulation_repository = CastingPostulationRepository(db)
+
+    updated_postulation_dict = updated_postulation.model_dump()
+    updated_postulation_dict['postulation_data'] = json.loads(updated_postulation_dict['postulation_data'])
+    casting_postulation_updated = casting_postulation_repository.update_casting_postulation(postulation_id, 
+                                            updated_postulation_dict)
+
+    if not casting_postulation_updated:
+        raise HTTPException(status_code=404, 
+                            detail=f"Casting postulation with id {postulation_id} not found.")
+    
+    return {'success': True, 'status_code': status.HTTP_200_OK,
+            'casting_postulation_id': postulation_id}

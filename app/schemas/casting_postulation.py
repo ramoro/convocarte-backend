@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel
 from schemas.casting_call import CastingCallPreviewResponse
 from datetime import datetime
@@ -22,7 +23,14 @@ class CastingPostulationPreview(BaseModel):
     id: int
     state: str
     created_at: datetime
+    postulation_data: Optional[str] = None
+
+class CastingPostulationPreviewExtraData(CastingPostulationPreview):
     remuneration_type: str
     project_name: str
     category: str
     region: str
+
+class CastingPostulationUpdate(BaseModel):
+    state: str
+    postulation_data: str
