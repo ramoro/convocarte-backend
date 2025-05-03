@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel
 from schemas.casting_call import CastingCallPreviewResponse
 from datetime import datetime
@@ -34,3 +34,6 @@ class CastingPostulationPreviewExtraData(CastingPostulationPreview):
 class CastingPostulationUpdate(BaseModel):
     state: str
     postulation_data: str
+
+class CastingPostulationIds(BaseModel):
+    ids: List[int]

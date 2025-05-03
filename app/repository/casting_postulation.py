@@ -1,6 +1,7 @@
+from datetime import datetime, timezone
 import models
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_
+from sqlalchemy import and_, update
 
 class CastingPostulationRepository:
 
@@ -77,13 +78,16 @@ class CastingPostulationRepository:
         return result
 
     def get_casting_postulations_by_casting_call(self, casting_call_id):
-        """Recibe el id de un casting y devuelve todas las postulaciones realizadas a ese casting."""
+        """Recibe el id de un casting y devuelve todas las postulaciones realizadas a ese casting. Salvo
+        las que están en estado 'Rechazada'."""
         postulations = (
             self.db.query(models.CastingPostulation)
             .filter(and_(models.CastingPostulation.casting_call_id == casting_call_id,
-                        models.CastingPostulation.deleted_at == None,
+                        #models.CastingPostulation.deleted_at == None,
+                        #DEVUELVE LAS ELIMINADAS, PUES SI EL USUARIO SE POSTULO, EL DIRECTOR DE CASTING
+                        #DEBERIA AUN PODER TENER LA POSIBILIDAD DE VER LA POSTULACION
                         models.CastingPostulation.state != "Rechazada")) 
-                        #Diferenciar de rechazada por mensaje. 
+                        #Diferenciar de rechazada por mensaje de las que estan en estado rechazada. 
                         #Si se rechazo por mensaje, el casting sigue mostrando la postulacion,
                         #por si se quiere volver a tener contacto. Rechazada asi solo
                         #significa que se elimino de la lista de postulaciones del casting
@@ -107,3 +111,29 @@ class CastingPostulationRepository:
     
         # Retorna el registro actualizado
         return casting_postulation_query.first()
+    
+    def delete_casting_postulation(self, casting_postulation):
+        try:
+            casting_postulation.deleted_at = datetime.now(timezone.utc)
+            casting_postulation.state = "Eliminada"
+
+            self.db.add(casting_postulation)
+            self.db.commit()
+            return True
+        except Exception:
+            self.db.rollback()
+            return False
+    
+    def update_casting_postulations_state(self, casting_postulation_ids, new_state):
+        """Recibe un listado de ids de postulaciones y cambia su estado a new_state."""
+        try:
+            update_query = update(models.CastingPostulation).where(
+                models.CastingPostulation.id.in_(casting_postulation_ids)
+            ).values(state=new_state)
+            
+            self.db.execute(update_query)
+            self.db.commit()
+            return True
+        except Exception as e:
+            self.db.rollback()
+            raise e

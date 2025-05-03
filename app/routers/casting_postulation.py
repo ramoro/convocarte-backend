@@ -1,6 +1,6 @@
 import json
 from typing import List
-from fastapi import APIRouter, Depends, Form, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends, Form, HTTPException, File, Response, UploadFile
 from requests import Session
 from routers.casting_call import add_path_to_photo
 import oauth2
@@ -17,7 +17,8 @@ from repository.form import FormRepository
 from schemas.casting_postulation import (CastingPostulationResponse, 
                                         CastingPostulationPreview,
                                         CastingPostulationPreviewExtraData, 
-                                        CastingPostulationUpdate)
+                                        CastingPostulationUpdate,
+                                        CastingPostulationIds)
     
 
 
@@ -204,7 +205,7 @@ def get_postulations_by_casting_call(casting_call_id: int,
     return casting_postulations
 
 @router.put("/{postulation_id}", status_code=status.HTTP_200_OK)
-async def update_casting_call(postulation_id: int, updated_postulation: CastingPostulationUpdate, db: Session = Depends(get_db)):
+async def update_casting_postulation(postulation_id: int, updated_postulation: CastingPostulationUpdate, db: Session = Depends(get_db)):
 
     casting_postulation_repository = CastingPostulationRepository(db)
 
@@ -219,3 +220,36 @@ async def update_casting_call(postulation_id: int, updated_postulation: CastingP
     
     return {'success': True, 'status_code': status.HTTP_200_OK,
             'casting_postulation_id': postulation_id}
+
+@router.delete("/{postulation_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_casting_postulation(postulation_id: int, db: Session = Depends(get_db)):
+
+    casting_postulation_repository = CastingPostulationRepository(db)
+
+    casting_postulation = casting_postulation_repository.get_casting_postulation_by_id(postulation_id)
+
+    if not casting_postulation:
+        raise HTTPException(status_code=404, detail=f"Casting postulation with id {postulation_id} not found.")
+    
+    deleted_casting_postulation = casting_postulation_repository.delete_casting_postulation(casting_postulation)
+    
+    if not deleted_casting_postulation:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                            detail="An error occurred while deleting the casting postulation") 
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.patch("/reject", status_code=status.HTTP_204_NO_CONTENT)
+def reject_postulations(postulation_ids: CastingPostulationIds, db: Session = Depends(get_db)):
+
+    casting_postulation_repository = CastingPostulationRepository(db)
+
+    for postulation_id in postulation_ids.ids:
+        casting_postulation = casting_postulation_repository.get_casting_postulation_by_id(postulation_id)
+
+        if not casting_postulation:
+            raise HTTPException(status_code=404, detail=f"Casting postulation with id {postulation_id} not found.")
+    
+    casting_postulation_repository.update_casting_postulations_state(postulation_ids.ids, "Rechazada")
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
