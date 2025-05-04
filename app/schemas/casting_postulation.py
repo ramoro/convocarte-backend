@@ -23,7 +23,6 @@ class CastingPostulationPreview(BaseModel):
     id: int
     state: str
     created_at: datetime
-    postulation_data: Optional[str] = None
 
 class CastingPostulationPreviewExtraData(CastingPostulationPreview):
     remuneration_type: str

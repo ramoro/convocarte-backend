@@ -240,6 +240,9 @@ class ExposedRole(Base):
     spots_amount = Column(Integer)
     occupied_spots = Column(Integer)
 
+    deleted_at = Column(TIMESTAMP(timezone=True))
+
+
     casting_call = relationship("CastingCall", back_populates="exposed_roles")  # Relación con CastingCall
     role = relationship("Role", back_populates="exposed_roles")  # Relación con Role
     form = relationship("Form", back_populates="exposed_roles")  # Relación con Form

@@ -12,10 +12,8 @@ from config import settings
 from starlette import status
 from repository.exposed_role import ExposedRoleRepository
 from repository.casting_postulation import CastingPostulationRepository
-from repository.casting_call import CastingCallRepository
 from repository.form import FormRepository
 from schemas.casting_postulation import (CastingPostulationResponse, 
-                                        CastingPostulationPreview,
                                         CastingPostulationPreviewExtraData, 
                                         CastingPostulationUpdate,
                                         CastingPostulationIds)
@@ -189,21 +187,6 @@ def get_user_casting_postulations(db: Session = Depends(get_db),
     
     return casting_postulations
 
-@router.get("/postulations-by-casting-call/{casting_call_id}")
-def get_postulations_by_casting_call(casting_call_id: int, 
-    db: Session = Depends(get_db)) -> List[CastingPostulationPreview]:
-
-    casting_call_repository = CastingCallRepository(db)
-    casting_call = casting_call_repository.get_casting_call_by_id(casting_call_id)
-    if not casting_call:
-          raise HTTPException(status_code=404, 
-                    detail=f"Casting call with id {casting_call_id} not found.")
-    
-    casting_postulation_repository = CastingPostulationRepository(db)
-    casting_postulations = casting_postulation_repository.get_casting_postulations_by_casting_call(casting_call_id)
-
-    return casting_postulations
-
 @router.put("/{postulation_id}", status_code=status.HTTP_200_OK)
 async def update_casting_postulation(postulation_id: int, updated_postulation: CastingPostulationUpdate, db: Session = Depends(get_db)):
 
@@ -253,3 +236,4 @@ def reject_postulations(postulation_ids: CastingPostulationIds, db: Session = De
     casting_postulation_repository.update_casting_postulations_state(postulation_ids.ids, "Rechazada")
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+

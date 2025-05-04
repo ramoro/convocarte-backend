@@ -77,24 +77,6 @@ class CastingPostulationRepository:
         result = [dict(row._mapping) for row in postulations]
         return result
 
-    def get_casting_postulations_by_casting_call(self, casting_call_id):
-        """Recibe el id de un casting y devuelve todas las postulaciones realizadas a ese casting. Salvo
-        las que están en estado 'Rechazada'."""
-        postulations = (
-            self.db.query(models.CastingPostulation)
-            .filter(and_(models.CastingPostulation.casting_call_id == casting_call_id,
-                        #models.CastingPostulation.deleted_at == None,
-                        #DEVUELVE LAS ELIMINADAS, PUES SI EL USUARIO SE POSTULO, EL DIRECTOR DE CASTING
-                        #DEBERIA AUN PODER TENER LA POSIBILIDAD DE VER LA POSTULACION
-                        models.CastingPostulation.state != "Rechazada")) 
-                        #Diferenciar de rechazada por mensaje de las que estan en estado rechazada. 
-                        #Si se rechazo por mensaje, el casting sigue mostrando la postulacion,
-                        #por si se quiere volver a tener contacto. Rechazada asi solo
-                        #significa que se elimino de la lista de postulaciones del casting
-
-            .all()
-        )
-        return postulations
     
     def update_casting_postulation(self, casting_postulation_id, updated_casting_postulation):
         """Recibe el id de una postulacion y un diccionaro con los datos a actualizar. Devuelve
