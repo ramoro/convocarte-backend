@@ -7,7 +7,7 @@ import oauth2
 import models
 from database import get_db
 from storage_managers.local_storage_manager import LocalStorageManager
-from storage_managers.cloud_storage_manager import CloudStorageManager
+from storage_managers.cloud_storage_manager import CloudStorageManager, CLOUD_STORAGE_URL, CLOUD_STORAGE_DOWNLOAD_URL
 from config import settings
 from starlette import status
 from repository.exposed_role import ExposedRoleRepository
@@ -34,6 +34,32 @@ router = APIRouter(
 )
 
 PHOTO_TYPES_NAMES=["Foto Plano Pecho", "Foto Plano General", "Foto un Perfil", "Foto Adicional 1", "Foto Adicional 2"]
+
+def add_complete_url_to_postulation_files(postulation_data):
+    """Recibe el json con la data de la postulacion y a cada foto y al cv les agrega el path completo según
+    se este corriendo de manera local o en produccion, para que cada archivo sea accesible a través de su
+    url completo."""
+    postulation_dict = json.loads(postulation_data)
+
+    #Se agrega path completo a las fotos (salvo a la de perfil que ya se guarda con el path completo)
+    for photo_type in PHOTO_TYPES_NAMES:
+        if photo_type in postulation_dict:
+            photo_name = postulation_dict[photo_type]
+            if "localhost" in settings.backend_url:
+                postulation_dict[photo_type] = settings.backend_url + settings.postulation_files_path[1:] + photo_name
+            else:
+                postulation_dict[photo_type] = CLOUD_STORAGE_URL + photo_name.split('.')[0]
+
+    #Se agrega path completo al CV
+    if "Curriculum" in postulation_dict:
+        cv_name = postulation_dict["Curriculum"]
+        if "localhost" in settings.backend_url:
+            postulation_dict["Curriculum"] = settings.backend_url + settings.postulation_files_path[1:] + cv_name #Con el [1:] se saca el "."
+        else:
+            #Sacamos la extension para quedarnos solo con el id del archivo
+            postulation_dict["Curriculum"]= CLOUD_STORAGE_DOWNLOAD_URL + cv_name.split('.')[0] 
+
+    return json.dumps(postulation_dict)
 
 #El nombre del cv y las fotos para accederlos desde el front
 #seran almacenadados en postulation_data, donde la clave sera
@@ -172,9 +198,9 @@ def get_casting_postulation(postulation_id: int,
     if not casting_postulation:
         raise HTTPException(status_code=404, detail=f"Casting postulation with id {postulation_id} not found.")
     
-    #TODO:Agregar path a fotos y CV en postulation_data devuelta
+    #Se agrega path completo a los archivos para que puedan ser accedidos desde el front
     add_path_to_photo(casting_postulation.casting_call)
-    print(casting_postulation.casting_call.casting_photos)
+    casting_postulation.postulation_data = add_complete_url_to_postulation_files(casting_postulation.postulation_data)
 
     return casting_postulation
 
