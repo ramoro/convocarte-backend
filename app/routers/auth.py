@@ -7,8 +7,7 @@ from schemas.auth import UserLogin
 import models
 import utils
 import oauth2
-from config import settings
-from storage_managers.cloud_storage_manager import CLOUD_STORAGE_URL 
+from routers.user import get_complete_url_for_profile_picture
 
 router = APIRouter(tags=['Authentication'])
 
@@ -31,12 +30,7 @@ def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session =
 
     profile_picture_path = ""
     if user.profile_picture:
-        #Si es corrida local uso el path local, sino el almacenamiento en google drive
-        if "localhost" in settings.backend_url:
-            profile_picture_path = settings.backend_url + settings.profile_pictures_path[1:] + user.profile_picture
-        else:
-            #removemos la extension ya que solo necesitamos el id de la foto en el google drive
-            profile_picture_path = CLOUD_STORAGE_URL + user.profile_picture.split('.')[0] 
+        profile_picture_path = get_complete_url_for_profile_picture(user.profile_picture)
 
     return {"id": user.id, "email": user.email, "fullname": user.fullname, 
             "profile_picture": profile_picture_path, "token": access_token, "token_type": "bearer"}

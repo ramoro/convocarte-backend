@@ -1,18 +1,24 @@
 import json
 from typing import List
-from fastapi import APIRouter, Depends, Form, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends, Form, HTTPException, File, Response, UploadFile
 from requests import Session
+from routers.casting_call import add_path_to_photo
 import oauth2
 import models
 from database import get_db
 from storage_managers.local_storage_manager import LocalStorageManager
-from storage_managers.cloud_storage_manager import CloudStorageManager, CLOUD_STORAGE_URL
+from storage_managers.cloud_storage_manager import CloudStorageManager, CLOUD_STORAGE_URL, CLOUD_STORAGE_DOWNLOAD_URL
 from config import settings
 from starlette import status
 from repository.exposed_role import ExposedRoleRepository
 from repository.casting_postulation import CastingPostulationRepository
 from repository.form import FormRepository
-from schemas.casting_postulation import CastingPostulationResponse
+from schemas.casting_postulation import (CastingPostulationResponse, 
+                                        CastingPostulationPreviewExtraData, 
+                                        CastingPostulationUpdate,
+                                        CastingPostulationIds)
+    
+
 
 
 if "localhost" in settings.backend_url:
@@ -28,6 +34,32 @@ router = APIRouter(
 )
 
 PHOTO_TYPES_NAMES=["Foto Plano Pecho", "Foto Plano General", "Foto un Perfil", "Foto Adicional 1", "Foto Adicional 2"]
+
+def add_complete_url_to_postulation_files(postulation_data):
+    """Recibe el json con la data de la postulacion y a cada foto y al cv les agrega el path completo según
+    se este corriendo de manera local o en produccion, para que cada archivo sea accesible a través de su
+    url completo."""
+    postulation_dict = json.loads(postulation_data)
+
+    #Se agrega path completo a las fotos (salvo a la de perfil que ya se guarda con el path completo)
+    for photo_type in PHOTO_TYPES_NAMES:
+        if photo_type in postulation_dict:
+            photo_name = postulation_dict[photo_type]
+            if "localhost" in settings.backend_url:
+                postulation_dict[photo_type] = settings.backend_url + settings.postulation_files_path[1:] + photo_name
+            else:
+                postulation_dict[photo_type] = CLOUD_STORAGE_URL + photo_name.split('.')[0]
+
+    #Se agrega path completo al CV
+    if "Curriculum" in postulation_dict:
+        cv_name = postulation_dict["Curriculum"]
+        if "localhost" in settings.backend_url:
+            postulation_dict["Curriculum"] = settings.backend_url + settings.postulation_files_path[1:] + cv_name #Con el [1:] se saca el "."
+        else:
+            #Sacamos la extension para quedarnos solo con el id del archivo
+            postulation_dict["Curriculum"]= CLOUD_STORAGE_DOWNLOAD_URL + cv_name.split('.')[0] 
+
+    return json.dumps(postulation_dict)
 
 #El nombre del cv y las fotos para accederlos desde el front
 #seran almacenadados en postulation_data, donde la clave sera
@@ -166,5 +198,68 @@ def get_casting_postulation(postulation_id: int,
     if not casting_postulation:
         raise HTTPException(status_code=404, detail=f"Casting postulation with id {postulation_id} not found.")
     
-    #TODO:Agregar path a fotos y CV en postulation_data devuelta    
+    #Se agrega path completo a los archivos para que puedan ser accedidos desde el front
+    add_path_to_photo(casting_postulation.casting_call)
+    casting_postulation.postulation_data = add_complete_url_to_postulation_files(casting_postulation.postulation_data)
+
     return casting_postulation
+
+@router.get("/")
+def get_user_casting_postulations(db: Session = Depends(get_db), 
+    current_user: models.User = Depends(oauth2.get_current_user)) -> List[CastingPostulationPreviewExtraData]:
+    
+    casting_postulation_repository = CastingPostulationRepository(db)
+    casting_postulations = casting_postulation_repository.get_casting_postulations_by_user(current_user.id)
+    
+    return casting_postulations
+
+@router.put("/{postulation_id}", status_code=status.HTTP_200_OK)
+async def update_casting_postulation(postulation_id: int, updated_postulation: CastingPostulationUpdate, db: Session = Depends(get_db)):
+
+    casting_postulation_repository = CastingPostulationRepository(db)
+
+    updated_postulation_dict = updated_postulation.model_dump()
+    updated_postulation_dict['postulation_data'] = json.loads(updated_postulation_dict['postulation_data'])
+    casting_postulation_updated = casting_postulation_repository.update_casting_postulation(postulation_id, 
+                                            updated_postulation_dict)
+
+    if not casting_postulation_updated:
+        raise HTTPException(status_code=404, 
+                            detail=f"Casting postulation with id {postulation_id} not found.")
+    
+    return {'success': True, 'status_code': status.HTTP_200_OK,
+            'casting_postulation_id': postulation_id}
+
+@router.delete("/{postulation_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_casting_postulation(postulation_id: int, db: Session = Depends(get_db)):
+
+    casting_postulation_repository = CastingPostulationRepository(db)
+
+    casting_postulation = casting_postulation_repository.get_casting_postulation_by_id(postulation_id)
+
+    if not casting_postulation:
+        raise HTTPException(status_code=404, detail=f"Casting postulation with id {postulation_id} not found.")
+    
+    deleted_casting_postulation = casting_postulation_repository.delete_casting_postulation(casting_postulation)
+    
+    if not deleted_casting_postulation:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                            detail="An error occurred while deleting the casting postulation") 
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.patch("/reject", status_code=status.HTTP_204_NO_CONTENT)
+def reject_postulations(postulation_ids: CastingPostulationIds, db: Session = Depends(get_db)):
+
+    casting_postulation_repository = CastingPostulationRepository(db)
+
+    for postulation_id in postulation_ids.ids:
+        casting_postulation = casting_postulation_repository.get_casting_postulation_by_id(postulation_id)
+
+        if not casting_postulation:
+            raise HTTPException(status_code=404, detail=f"Casting postulation with id {postulation_id} not found.")
+    
+    casting_postulation_repository.update_casting_postulations_state(postulation_ids.ids, "Rechazada")
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+

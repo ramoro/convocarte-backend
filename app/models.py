@@ -20,8 +20,7 @@ class User(Base):
     form_templates = relationship("FormTemplate", back_populates="owner", cascade="all, delete")
     projects = relationship("Project", back_populates="owner", cascade="all, delete-orphan")
     casting_calls = relationship("CastingCall", back_populates="owner", cascade="all, delete")
-
-
+    casting_postulations = relationship("CastingPostulation", back_populates="owner", cascade="all, delete")
 
     profile_picture = Column(String)
     cv = Column(String)
@@ -241,6 +240,9 @@ class ExposedRole(Base):
     spots_amount = Column(Integer)
     occupied_spots = Column(Integer)
 
+    deleted_at = Column(TIMESTAMP(timezone=True))
+
+
     casting_call = relationship("CastingCall", back_populates="exposed_roles")  # Relación con CastingCall
     role = relationship("Role", back_populates="exposed_roles")  # Relación con Role
     form = relationship("Form", back_populates="exposed_roles")  # Relación con Form
@@ -252,6 +254,7 @@ class CastingPostulation(Base):
     __tablename__ = "casting_postulations"
     id = Column(Integer, primary_key=True, nullable=False)
     owner_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
+    owner = relationship("User", back_populates="casting_postulations")
     casting_call_id = Column(Integer, ForeignKey('casting_calls.id', ondelete="CASCADE"), nullable=False, index=True)
     exposed_role_id = Column(Integer, ForeignKey('exposed_roles.id', ondelete="CASCADE"), nullable=False, index=True)
     state = Column(String, nullable=False)

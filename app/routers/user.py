@@ -44,6 +44,17 @@ def add_complete_url_shots(user):
                 shot_url = CLOUD_STORAGE_URL + getattr(user, attribute).split('.')[0] #Saco la extension, para google drive solo me interesa el id
             setattr(user, attribute, shot_url)
 
+def get_complete_url_for_profile_picture(user_profile_picture):
+    """Recibe el nombre de una foto de perfil con su extension y devuelve el url
+    completo para acceder a ella, ya sea que este almacenada en un sv local o en el sv
+    de produccion gestionado con google drive.""" 
+    #Si es corrida local uso el path local, sino el almacenamiento en google drive
+    if "localhost" in settings.backend_url:
+        return settings.backend_url + settings.profile_pictures_path[1:] + user_profile_picture
+    else:
+        #removemos la extension ya que solo necesitamos el id de la foto en el google drive
+        return CLOUD_STORAGE_URL + user_profile_picture.split('.')[0] 
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=UserResponse)
 def create_user(request: Request, user: CreateUser, db: Session = Depends(get_db)):
     user_repository = UserRepository(db)
@@ -272,6 +283,9 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.U
             user.cv = settings.backend_url + settings.cvs_path[1:] + user.cv #Con el [1:] se saca el "."
         else:
             user.cv = CLOUD_STORAGE_DOWNLOAD_URL + user.cv.split('.')[0] #Sacamos la extension para quedarnos solo con el id del archivo
+    
+    if user.profile_picture: 
+        user.profile_picture = get_complete_url_for_profile_picture(user.profile_picture)
     
     add_complete_url_shots(user)
 

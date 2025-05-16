@@ -6,6 +6,12 @@ import pytz
 from dateutil import parser
 from schemas.project import ProjectResponse
 
+class CastingCallPostulation(BaseModel):
+    id: int
+    state: str
+    created_at: datetime
+    postulation_data: str
+    exposed_role_id: int
 
 class CastingCallExposedRoleInfo(BaseModel):
     role_id: int
@@ -19,6 +25,7 @@ class CastingCallExposedRoleInfo(BaseModel):
     spots_amount: Optional[int] = None
     occupied_spots: Optional[int] = None
     disabled: bool
+    casting_postulations: Optional[List[CastingCallPostulation]] = None
 
 #class CastingCallRoleCreation(CastingCallRole):
 #    form_template_id: int #Para la creacion se usa form_template_id, luego al crearse el casting ya se crea un form para el rol dentro del casting
@@ -43,6 +50,7 @@ class CastingCallPreviewResponse(BaseModel):
     remuneration_type: str
     state: str
     casting_photos: Optional[List[str]] = None
+    description: Optional[str] = None
     created_at: datetime
     publication_date: Optional[date]
     project: Optional[ProjectResponse] = None

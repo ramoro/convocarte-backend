@@ -286,9 +286,11 @@ class CastingCallRepository:
                 # forms generados
                 for exposed_role in casting_call.exposed_roles:
                     if exposed_role.form:
-                        self.db.delete(exposed_role.form)
-
-                    self.db.delete(exposed_role)
+                        exposed_role.form.deleted_at = datetime.now(timezone.utc)
+                        self.db.add(exposed_role.form)
+                    
+                    exposed_role.deleted_at = datetime.now(timezone.utc)
+                    self.db.add(exposed_role)
                 # Marco el CastingCall como eliminado con la fecha
                 # pero no lo borro de la bdd para tenerlo como historial
                 casting_call.deleted_at = datetime.now(timezone.utc)
@@ -300,5 +302,26 @@ class CastingCallRepository:
             else:
                 return False
         except Exception as e:
+            print(e)
             self.db.rollback()
             return False
+        
+    def get_casting_call_by_id_with_postulations(self, casting_call_id):
+        """Recibe el id de un casting y devuelve toda su informacion (roles asociados,
+        forms, proyecto), pero ademas devuelve el listado de postulaciones hechas para ese casting."""
+        casting_call = (
+            self.db.query(models.CastingCall)
+            .filter(models.CastingCall.id == casting_call_id)
+            .options(
+                joinedload(models.CastingCall.project),
+                joinedload(models.CastingCall.exposed_roles)
+                .joinedload(models.ExposedRole.role),  # Cargar el role de cada exposed role
+                joinedload(models.CastingCall.exposed_roles)
+                .joinedload(models.ExposedRole.form),   # Cargar el form de cada exposed role
+                joinedload(models.CastingCall.exposed_roles)
+                .joinedload(models.ExposedRole.casting_postulations) # Cargar postulaciones de cada exposed role
+            )  
+            .first()
+        )
+    
+        return casting_call

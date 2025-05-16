@@ -11,7 +11,7 @@ from schemas.casting_call import  (
     PublishedCastingCallResponse, 
     CastingCallChangeState, 
     CastingCallResponse,
-    CastingCallFilter
+    CastingCallFilter,
 )
 from repository.casting_call import CastingCallRepository
 from repository.project import ProjectRepository
@@ -405,3 +405,19 @@ def delete_casting_call(casting_call_id: int, db: Session = Depends(get_db)):
                             detail="An error occurred while deleting the casting call") 
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.get("/with-postulations/{casting_call_id}")
+def get_casting_call_with_postulations(casting_call_id: int, 
+    db: Session = Depends(get_db)) -> CastingCallResponse:
+
+    casting_call_repository = CastingCallRepository(db)
+    casting_call_info = casting_call_repository.get_casting_call_by_id_with_postulations(casting_call_id)
+
+    if not casting_call_info:
+        raise HTTPException(status_code=404, detail=f"Casting call with id {casting_call_id} not found.")
+    
+    add_path_to_photo(casting_call_info)
+    
+    return casting_call_info
+
+    
