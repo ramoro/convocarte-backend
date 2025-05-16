@@ -18,6 +18,7 @@ class CastingPostulationResponse(BaseModel):
     casting_call: CastingCallPreviewResponse
     exposed_role: ExposedRole
     created_at: datetime
+    owner_id: int
 
 class CastingPostulationPreview(BaseModel):
     id: int
