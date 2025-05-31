@@ -30,7 +30,6 @@ else:
 
 def add_complete_url_to_message_files(message_files):
     """Recibe el json con los datos de cada archivo perteneciente al mensaje"""
-    print(f"message_files: {message_files}")
     files_dict = json.loads(message_files)
 
     result = {}
