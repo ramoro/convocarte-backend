@@ -156,6 +156,7 @@ async def create_casting_call(title: str = Form(...),
     
     # Se le manda los datos del casting recibidos sumado al id del usuario que lo creo 
     # y por otro lado la lista de roles que expondra el casting
+    # TODO: Si falla creacion casting hay q eliminar fotos creadas
     casting_call_created = casting_call_repository.add_new_casting_call(new_casting_call, 
                                                                         roles_list, associated_project)
     if not casting_call_created:
@@ -407,11 +408,13 @@ def delete_casting_call(casting_call_id: int, db: Session = Depends(get_db)):
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.get("/with-postulations/{casting_call_id}")
-def get_casting_call_with_postulations(casting_call_id: int, 
+def get_casting_call_with_postulations(casting_call_id: int,
+    current_user: models.User = Depends(oauth2.get_current_user), 
     db: Session = Depends(get_db)) -> CastingCallResponse:
 
     casting_call_repository = CastingCallRepository(db)
-    casting_call_info = casting_call_repository.get_casting_call_by_id_with_postulations(casting_call_id)
+    casting_call_info = casting_call_repository.get_casting_call_by_id_with_postulations(casting_call_id, 
+                                                                                    current_user.id)
 
     if not casting_call_info:
         raise HTTPException(status_code=404, detail=f"Casting call with id {casting_call_id} not found.")

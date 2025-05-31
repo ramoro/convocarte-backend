@@ -8,10 +8,13 @@ from schemas.project import ProjectResponse
 
 class CastingCallPostulation(BaseModel):
     id: int
+    owner_id: int
     state: str
     created_at: datetime
     postulation_data: str
     exposed_role_id: int
+    has_unread_messages: Optional[bool] = None
+    unread_messages_count: Optional[int] = None
 
 class CastingCallExposedRoleInfo(BaseModel):
     role_id: int
@@ -54,6 +57,7 @@ class CastingCallPreviewResponse(BaseModel):
     created_at: datetime
     publication_date: Optional[date]
     project: Optional[ProjectResponse] = None
+    owner_id: int
 
 class PublishedCastingCallResponse(BaseModel):
     title: str

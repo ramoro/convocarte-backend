@@ -30,6 +30,8 @@ class CastingPostulationPreviewExtraData(CastingPostulationPreview):
     project_name: str
     category: str
     region: str
+    has_unread_messages: Optional[bool] = None
+    unread_messages_count: Optional[int] = None
 
 class CastingPostulationUpdate(BaseModel):
     state: str
