@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     gallery_shots_path: str = "./static/gallery_shots/"
     casting_call_photos_path: str = "./static/casting_call_photos/"
     postulation_files_path: str = "./static/postulation_files/"
+    message_files_path: str = "./static/message_files/"
     backend_url: str
     frontend_url: str = "http://localhost:8080"
     google_credentials: str = ""

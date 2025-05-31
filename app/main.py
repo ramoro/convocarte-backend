@@ -10,7 +10,8 @@ from routers import (
     project,
     casting_call,
     form,
-    casting_postulation)
+    casting_postulation,
+    message)
 from fastapi.staticfiles import StaticFiles
 from config import settings
 import models
@@ -44,6 +45,7 @@ app.include_router(form.router)
 app.include_router(project.router)
 app.include_router(casting_call.router)
 app.include_router(casting_postulation.router)
+app.include_router(message.router)
 
 @app.get("/")
 def root():
