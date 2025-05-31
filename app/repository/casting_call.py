@@ -306,9 +306,10 @@ class CastingCallRepository:
             self.db.rollback()
             return False
         
-    def get_casting_call_by_id_with_postulations(self, casting_call_id):
-        """Recibe el id de un casting y devuelve toda su informacion (roles asociados,
-        forms, proyecto), pero ademas devuelve el listado de postulaciones hechas para ese casting."""
+    def get_casting_call_by_id_with_postulations(self, casting_call_id, current_user_id):
+        """Recibe el id de un casting y el id del usuario que solicitó la información, y devuelve toda
+        la data del casting (roles asociados, forms, proyecto), pero ademas devuelve el listado de postulaciones
+        hechas para ese casting con la información de si tienen mensajes sin leer, y cuantos."""
         casting_call = (
             self.db.query(models.CastingCall)
             .filter(models.CastingCall.id == casting_call_id)
@@ -320,8 +321,23 @@ class CastingCallRepository:
                 .joinedload(models.ExposedRole.form),   # Cargar el form de cada exposed role
                 joinedload(models.CastingCall.exposed_roles)
                 .joinedload(models.ExposedRole.casting_postulations) # Cargar postulaciones de cada exposed role
+                .joinedload(models.CastingPostulation.messages) #Cargar mensajes de cada postulacion para saber si hay mensajes sin leer
             )  
             .first()
         )
+
+        if casting_call:
+            # Procesar cada postulación para agregar info de mensajes no leídos
+            for exposed_role in casting_call.exposed_roles:
+                for postulation in exposed_role.casting_postulations:
+                    # Contar mensajes no leídos donde el emisor no es el usuario actual
+                    unread_count = sum(
+                        1 for message in postulation.messages 
+                        if "Sin Leer" in message.state 
+                        and message.sender_id != current_user_id
+                    )
+
+                    postulation.unread_messages_count = unread_count
+                    postulation.has_unread_messages = unread_count > 0
     
         return casting_call

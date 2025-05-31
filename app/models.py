@@ -21,7 +21,20 @@ class User(Base):
     projects = relationship("Project", back_populates="owner", cascade="all, delete-orphan")
     casting_calls = relationship("CastingCall", back_populates="owner", cascade="all, delete")
     casting_postulations = relationship("CastingPostulation", back_populates="owner", cascade="all, delete")
-
+    sent_messages = relationship(
+        "Message", 
+        foreign_keys="Message.sender_id", 
+        back_populates="sender", 
+        cascade="all, delete"
+    )
+    # Mensajes recibidos (como destinatario)
+    received_messages = relationship(
+        "Message", 
+        foreign_keys="Message.receiver_id", 
+        back_populates="receiver", 
+        cascade="all, delete"
+    )
+    
     profile_picture = Column(String)
     cv = Column(String)
     reel_link = Column(String)
@@ -265,6 +278,9 @@ class CastingPostulation(Base):
     # Relaciones
     casting_call = relationship("CastingCall", back_populates="casting_postulations")
     exposed_role = relationship("ExposedRole", back_populates="casting_postulations")
+    
+    # Relación inversa con Message
+    messages = relationship("Message", back_populates="casting_postulation")
 
     # Métodos para el manejo de postulation_data que se almacenara como JSON en la bdd
     def set_postulation_data(self, data):
@@ -274,3 +290,37 @@ class CastingPostulation(Base):
     def get_postulation_data(self):
         """Convierte un JSON string de vuelta a dict."""
         return json.loads(self.postulation_data) if self.postulation_data else None
+
+class Message(Base):
+    __tablename__ = "messages"
+    id = Column(Integer, primary_key=True, nullable=False)
+    content = Column(String, nullable=False)
+    files = Column(String)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    state = Column(String, nullable=False, index=True)
+
+    # Relación con el mensaje anterior (puede ser NULL si es el primer mensaje)
+    previous_message_id = Column(Integer, ForeignKey('messages.id', ondelete="SET NULL"))
+    sender_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
+    receiver_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
+    postulation_id = Column(Integer, ForeignKey('casting_postulations.id', ondelete="CASCADE"), nullable=False, index=True)
+
+    # Relación con el mensaje anterior (auto-relación)
+    previous_message = relationship(
+        "Message", 
+        remote_side=[id],  # Indica que esta es la parte "remota" de la relación
+        back_populates="replies",  # Nombre de la relación inversa
+        foreign_keys=[previous_message_id]
+    )
+
+    # Mensajes que son respuestas a este (relación inversa)
+    replies = relationship(
+        "Message",
+        back_populates="previous_message",
+        cascade="all, delete-orphan"  # Opcional: borra respuestas si se elimina este mensaje
+    )
+
+    sender = relationship("User", foreign_keys=[sender_id], back_populates="sent_messages")
+    receiver = relationship("User", foreign_keys=[receiver_id], back_populates="received_messages")
+    casting_postulation = relationship("CastingPostulation", back_populates="messages")
+    

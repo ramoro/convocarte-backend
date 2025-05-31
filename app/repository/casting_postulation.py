@@ -48,33 +48,44 @@ class CastingPostulationRepository:
     
     def get_casting_postulations_by_user(self, user_id):
         """Recibe el id de un usuario y devuelve todas las postulaciones que ha hecho
-        con datos del casting y del proyecto."""
+        con datos del casting y del proyecto, incluyendo conteo de mensajes no leídos."""
         postulations = (
-            self.db.query(
-                models.CastingPostulation.id,
-                models.CastingPostulation.state,
-                models.CastingPostulation.created_at,
-                # models.CastingCall.title,
-                # models.CastingCall.description,
-                models.CastingCall.remuneration_type,
-                # models.CastingCall.status,
-                # models.CastingCall.photos,
-                # models.Role.name,
-                # models.Role.description,
-                models.Project.name.label("project_name"),
-                models.Project.category,
-                models.Project.region,
+            self.db.query(models.CastingPostulation)
+            .filter(
+                models.CastingPostulation.owner_id == user_id,
+                models.CastingPostulation.deleted_at == None
             )
-            .join(models.CastingPostulation.exposed_role)
-            .join(models.ExposedRole.casting_call)
-            .join(models.CastingCall.project)
-            .filter(and_(models.CastingPostulation.owner_id == user_id,
-                         models.CastingPostulation.deleted_at == None))
+            .options(
+                joinedload(models.CastingPostulation.exposed_role)
+                .joinedload(models.ExposedRole.casting_call)
+                .joinedload(models.CastingCall.project),
+                joinedload(models.CastingPostulation.messages)  # Cargar todos los mensajes
+            )
             .order_by(models.CastingPostulation.created_at.desc())
             .all()
         )
 
-        result = [dict(row._mapping) for row in postulations]
+        # Procesar cada postulación para agregar la info necesaria
+        result = []
+        for postulation in postulations:
+            # Contar mensajes no leídos donde el receptor es el usuario
+            unread_count = sum(
+                1 for message in postulation.messages
+                if "Sin Leer" in message.state  and message.sender_id != user_id
+            )
+
+        result.append({
+            "id": postulation.id,
+            "state": postulation.state,
+            "created_at": postulation.created_at,
+            "remuneration_type": postulation.exposed_role.casting_call.remuneration_type,
+            "project_name": postulation.exposed_role.casting_call.project.name,
+            "category": postulation.exposed_role.casting_call.project.category,
+            "region": postulation.exposed_role.casting_call.project.region,
+            "unread_messages_count": unread_count,
+            "has_unread_messages": unread_count > 0
+        })
+
         return result
 
     
