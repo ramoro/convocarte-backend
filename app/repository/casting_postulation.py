@@ -74,17 +74,17 @@ class CastingPostulationRepository:
                 if "Sin Leer" in message.state  and message.sender_id != user_id
             )
 
-        result.append({
-            "id": postulation.id,
-            "state": postulation.state,
-            "created_at": postulation.created_at,
-            "remuneration_type": postulation.exposed_role.casting_call.remuneration_type,
-            "project_name": postulation.exposed_role.casting_call.project.name,
-            "category": postulation.exposed_role.casting_call.project.category,
-            "region": postulation.exposed_role.casting_call.project.region,
-            "unread_messages_count": unread_count,
-            "has_unread_messages": unread_count > 0
-        })
+            result.append({
+                "id": postulation.id,
+                "state": postulation.state,
+                "created_at": postulation.created_at,
+                "remuneration_type": postulation.exposed_role.casting_call.remuneration_type,
+                "project_name": postulation.exposed_role.casting_call.project.name,
+                "category": postulation.exposed_role.casting_call.project.category,
+                "region": postulation.exposed_role.casting_call.project.region,
+                "unread_messages_count": unread_count,
+                "has_unread_messages": unread_count > 0
+            })
 
         return result
 
