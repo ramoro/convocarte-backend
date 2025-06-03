@@ -199,6 +199,17 @@ class CastingCall(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     deleted_at = Column(TIMESTAMP(timezone=True), index=True)
 
+    #Template de rechazo para los castings
+    #Este template se usa para enviar un mensaje de rechazo a los usuarios que se postulan a un casting
+    rejection_template = Column(String, default='''Hola /NombreUsuario/, espero te encuentres bien.
+    Queríamos agradecerte por participar en el casting y por el tiempo brindado. Valoramos mucho tu trabajo, pero en esta ocasión decidimos avanzar con otra propuesta. De todos modos, esperamos poder contar con vos en futuros proyectos.
+    ¡Muchas gracias nuevamente!''',
+    server_default=text("'Hola /NombreUsuario/, espero te encuentres bien.\n '" + 
+                        "'Queríamos agradecerte por participar en el casting y por el tiempo brindado.'" +
+                        "'Valoramos mucho tu trabajo, pero en esta ocasión decidimos avanzar con otra propuesta.\n\n'"
+                        "'De todos modos, esperamos poder contar con vos en futuros proyectos.\n¡Muchas gracias nuevamente!'")
+    )
+
     # Relación inversa con Project
     project = relationship("Project", back_populates="casting_calls")  
     # Relación inversa con ExposedRole

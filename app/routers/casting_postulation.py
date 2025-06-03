@@ -210,7 +210,7 @@ def get_user_casting_postulations(db: Session = Depends(get_db),
     
     casting_postulation_repository = CastingPostulationRepository(db)
     casting_postulations = casting_postulation_repository.get_casting_postulations_by_user(current_user.id)
-    
+
     return casting_postulations
 
 @router.put("/{postulation_id}", status_code=status.HTTP_200_OK)

@@ -22,6 +22,8 @@ router = APIRouter(
     dependencies=[Depends(oauth2.get_current_user)]
 )
 
+PLACEHOLDER_NOMBRE_USUARIO = "/NombreUsuario/"
+
 # Defino el almacenamiento segun si es corrida local o no (si no es local los archivos se almacenan en Google Drive)
 if "localhost" in settings.backend_url:
     storage_manager = LocalStorageManager()
@@ -84,9 +86,16 @@ async def create_message(content: str = Form(...),
         raise HTTPException(status_code=404, 
                             detail=f"Postulation with id {postulation_id} not found.")
 
-    if not user_repository.get_user_by_id(receiver_id):
+    receiver_user = user_repository.get_user_by_id(receiver_id)
+    
+    if not receiver_user:
         raise HTTPException(status_code=404, 
                             detail=f"User with id {receiver_id} not found.")
+    
+    # Verifico que si el contenido del mensaje viene con el placeholder /NombreUsuario/ lo reemplazo
+    # con el nombre del usuario receptor
+    receiver_user_name = receiver_user.fullname.split(' ')[0]
+    content = content.replace(PLACEHOLDER_NOMBRE_USUARIO, receiver_user_name)
 
     #Almacenamiento de archivos adjuntos al mensaje
     #TODO: Si luego falla creacion de mensaje hay q eliminar archivos creados
@@ -100,7 +109,6 @@ async def create_message(content: str = Form(...),
 
     if previous_message_id:
         new_message["previous_message_id"] = previous_message_id
-
     message_created = message_repository.add_new_message(new_message)
 
     if not message_created:

@@ -58,6 +58,7 @@ class CastingCallPreviewResponse(BaseModel):
     publication_date: Optional[date]
     project: Optional[ProjectResponse] = None
     owner_id: int
+    rejection_template: Optional[str] = None
 
 class PublishedCastingCallResponse(BaseModel):
     title: str
@@ -124,6 +125,7 @@ class CastingCallResponse(CastingCallPreviewResponse):
     expiration_date: Optional[date] = None
     project: CastingCallProject
     exposed_roles: List[CastingCallExposedRole]
+    rejection_template: Optional[str] = None
 
 class CastingCallFilter(BaseModel):
     date_order: str
@@ -132,3 +134,6 @@ class CastingCallFilter(BaseModel):
     age: Optional[int] = None
     height: Optional[float] = None
     hair_colors: Optional[List[str]] = None
+
+class CastingCallChangeRejectionTemplate(BaseModel):
+    rejection_template: str

@@ -12,6 +12,7 @@ from schemas.casting_call import  (
     CastingCallChangeState, 
     CastingCallResponse,
     CastingCallFilter,
+    CastingCallChangeRejectionTemplate
 )
 from repository.casting_call import CastingCallRepository
 from repository.project import ProjectRepository
@@ -422,5 +423,20 @@ def get_casting_call_with_postulations(casting_call_id: int,
     add_path_to_photo(casting_call_info)
     
     return casting_call_info
+
+@router.patch("/rejection-template/{casting_call_id}")
+def update_casting_call_rejection_template(casting_call_id: int, 
+                                           casting_call: CastingCallChangeRejectionTemplate,
+                                           db: Session = Depends(get_db)):
+
+    casting_call_repository = CastingCallRepository(db)
+
+    updated_casting_call = casting_call_repository.update_casting_call(casting_call_id, 
+                                                                        casting_call.model_dump())
+    
+    if not updated_casting_call:
+        raise HTTPException(status_code=404, 
+                            detail=f"Casting call with id {casting_call_id} not found.")
+
 
     
