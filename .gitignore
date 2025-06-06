@@ -1,4 +1,4 @@
 __pycache__
 .env
+*.log
 /app/static/*
-.log
