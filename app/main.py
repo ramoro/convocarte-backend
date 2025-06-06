@@ -15,6 +15,10 @@ from routers import (
 from fastapi.staticfiles import StaticFiles
 from config import settings
 import models
+import asyncio
+from scheduled_tasks import clean_old_unverified_users, change_state_expired_casting_calls
+from utils import run_scheduled_function
+
 
 app = FastAPI()
 
@@ -51,3 +55,10 @@ app.include_router(message.router)
 def root():
     return {"Hello": "World"}
 
+#Corrida de tareas programadas:
+#clean_unverified_users: limpia usuarios que se crearon cuenta y no la verificaron hace mas de 24 hs
+#change_state_expired_casting_calls: cambia estado a "Vencido" a los castings que ya vencio su fecha de expiracion
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(run_scheduled_function(clean_old_unverified_users, hour=8, minute=0))
+    asyncio.create_task(run_scheduled_function(change_state_expired_casting_calls, hour=0, minute=0))
