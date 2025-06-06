@@ -130,3 +130,35 @@ class CastingPostulationRepository:
         except Exception as e:
             self.db.rollback()
             raise e
+        
+    def choose_casting_postulation(self, postulation_id):
+        casting_postulation_query = self.db.query(models.CastingPostulation).\
+                            filter(models.CastingPostulation.id == postulation_id)
+        
+        casting_postulation = casting_postulation_query.first()
+
+        if not casting_postulation:
+            return None
+
+        casting_postulation_query.update({'state': 'Elegida'}, synchronize_session=False)
+        casting_postulation.exposed_role.role.assigned_user_id = casting_postulation.owner_id
+        self.db.commit()
+    
+        # Retorna el registro actualizado
+        return casting_postulation
+    
+    def remove_chosen_casting_postulation(self, postulation_id):
+        casting_postulation_query = self.db.query(models.CastingPostulation).\
+                            filter(models.CastingPostulation.id == postulation_id)
+        
+        casting_postulation = casting_postulation_query.first()
+
+        if not casting_postulation:
+            return None
+
+        casting_postulation_query.update({'state': 'Pendiente'}, synchronize_session=False)
+        casting_postulation.exposed_role.role.assigned_user_id = None
+        self.db.commit()
+    
+        # Retorna el registro actualizado
+        return casting_postulation

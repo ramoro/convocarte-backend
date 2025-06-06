@@ -263,3 +263,28 @@ def reject_postulations(postulation_ids: CastingPostulationIds, db: Session = De
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+@router.patch("/choose/{postulation_id}", status_code=status.HTTP_204_NO_CONTENT)
+def choose_postulation(postulation_id: int, db: Session = Depends(get_db)):
+
+    casting_postulation_repository = CastingPostulationRepository(db)
+    
+    chosen_casting_postulation = casting_postulation_repository.choose_casting_postulation(postulation_id)
+    
+    if not chosen_casting_postulation:
+        raise HTTPException(status_code=404, 
+                            detail=f"Casting postulation with id {postulation_id} not found.")
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.patch("/remove-choice/{postulation_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_choice(postulation_id: int, db: Session = Depends(get_db)):
+
+    casting_postulation_repository = CastingPostulationRepository(db)
+    
+    chosen_casting_postulation = casting_postulation_repository.remove_chosen_casting_postulation(postulation_id)
+    
+    if not chosen_casting_postulation:
+        raise HTTPException(status_code=404, 
+                            detail=f"Casting postulation with id {postulation_id} not found.")
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
