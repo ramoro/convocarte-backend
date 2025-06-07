@@ -12,11 +12,11 @@ class CastingCallPostulation(BaseModel):
     state: str
     created_at: datetime
     postulation_data: str
-    exposed_role_id: int
+    open_role_id: int
     has_unread_messages: Optional[bool] = None
     unread_messages_count: Optional[int] = None
 
-class CastingCallExposedRoleInfo(BaseModel):
+class CastingCallOpenRoleInfo(BaseModel):
     role_id: int
     min_age_required: Optional[int] = None
     max_age_required: Optional[int] = None
@@ -106,25 +106,25 @@ class CastingCallProject(BaseModel):
     category: str
     region: str
 
-class ExposedRoleForm(BaseModel):
+class OpenRoleForm(BaseModel):
     id: int
     form_title: str
 
-class ExposedRoleRoleData(BaseModel):
+class OpenRoleRoleData(BaseModel):
     id: int
     name: str
 
-class CastingCallExposedRole(CastingCallExposedRoleInfo):
+class CastingCallOpenRole(CastingCallOpenRoleInfo):
     id: int
-    form: ExposedRoleForm
-    role: ExposedRoleRoleData
+    form: OpenRoleForm
+    role: OpenRoleRoleData
 
 class CastingCallResponse(CastingCallPreviewResponse):
     description: Optional[str] = None
     state: str
     expiration_date: Optional[date] = None
     project: CastingCallProject
-    exposed_roles: List[CastingCallExposedRole]
+    open_roles: List[CastingCallOpenRole]
     rejection_template: Optional[str] = None
 
 class CastingCallFilter(BaseModel):

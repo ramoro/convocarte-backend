@@ -20,13 +20,13 @@ class CastingPostulationRepository:
 
         return new_casting_postulation
     
-    def get_casting_postulation_by_user_and_exposed_role(self, user_id, exposed_role_id):
+    def get_casting_postulation_by_user_and_open_role(self, user_id, open_role_id):
         """Recibe el id de un usuario y el id de un rol expuesto. Devuelve la postulacion del usuario
         a ese rol expuesto en caso de existir, sino devuelve None."""
         return self.db.query(models.CastingPostulation).filter(
             and_(
                 models.CastingPostulation.owner_id == user_id,
-                models.CastingPostulation.exposed_role_id == exposed_role_id
+                models.CastingPostulation.open_role_id == open_role_id
             )).first()
     
     def get_casting_postulation_by_id(self, casting_postulation_id):
@@ -38,8 +38,8 @@ class CastingPostulationRepository:
             .options(
                 joinedload(models.CastingPostulation.casting_call)
                 .joinedload(models.CastingCall.project),
-                joinedload(models.CastingPostulation.exposed_role)
-                .joinedload(models.ExposedRole.role)
+                joinedload(models.CastingPostulation.open_role)
+                .joinedload(models.OpenRole.role)
             )
             .first()
         )
@@ -56,8 +56,8 @@ class CastingPostulationRepository:
                 models.CastingPostulation.deleted_at == None
             )
             .options(
-                joinedload(models.CastingPostulation.exposed_role)
-                .joinedload(models.ExposedRole.casting_call)
+                joinedload(models.CastingPostulation.open_role)
+                .joinedload(models.OpenRole.casting_call)
                 .joinedload(models.CastingCall.project),
                 joinedload(models.CastingPostulation.messages)  # Cargar todos los mensajes
             )
@@ -78,10 +78,10 @@ class CastingPostulationRepository:
                 "id": postulation.id,
                 "state": postulation.state,
                 "created_at": postulation.created_at,
-                "remuneration_type": postulation.exposed_role.casting_call.remuneration_type,
-                "project_name": postulation.exposed_role.casting_call.project.name,
-                "category": postulation.exposed_role.casting_call.project.category,
-                "region": postulation.exposed_role.casting_call.project.region,
+                "remuneration_type": postulation.open_role.casting_call.remuneration_type,
+                "project_name": postulation.open_role.casting_call.project.name,
+                "category": postulation.open_role.casting_call.project.category,
+                "region": postulation.open_role.casting_call.project.region,
                 "unread_messages_count": unread_count,
                 "has_unread_messages": unread_count > 0
             })
@@ -141,7 +141,7 @@ class CastingPostulationRepository:
             return None
 
         casting_postulation_query.update({'state': 'Elegida'}, synchronize_session=False)
-        casting_postulation.exposed_role.role.assigned_user_id = casting_postulation.owner_id
+        casting_postulation.open_role.role.assigned_user_id = casting_postulation.owner_id
         self.db.commit()
     
         # Retorna el registro actualizado
@@ -157,7 +157,7 @@ class CastingPostulationRepository:
             return None
 
         casting_postulation_query.update({'state': 'Pendiente'}, synchronize_session=False)
-        casting_postulation.exposed_role.role.assigned_user_id = None
+        casting_postulation.open_role.role.assigned_user_id = None
         self.db.commit()
     
         # Retorna el registro actualizado

@@ -156,7 +156,7 @@ async def create_casting_call(title: str = Form(...),
                         "state": "Borrador"} #Arranca en estado Borrador hasta que se publique
     
     # Se le manda los datos del casting recibidos sumado al id del usuario que lo creo 
-    # y por otro lado la lista de roles que expondra el casting
+    # y por otro lado la lista de roles que abrira el casting
     # TODO: Si falla creacion casting hay q eliminar fotos creadas
     casting_call_created = casting_call_repository.add_new_casting_call(new_casting_call, 
                                                                         roles_list, associated_project)
@@ -371,7 +371,7 @@ async def update_casting_call(casting_id: int,
 
     # Se le manda los nuevos datos del casting junto a los roles expuestos actualizados
     # y las fotos que se eliminaron y las que se agregaron
-    casting_call_updated, message = casting_call_repository.update_casting_call_with_exposed_roles(casting_id,
+    casting_call_updated, message = casting_call_repository.update_casting_call_with_open_roles(casting_id,
                                                                                           updated_casting_call, 
                                                                                           roles_list,
                                                                                           deleted_photos_names,

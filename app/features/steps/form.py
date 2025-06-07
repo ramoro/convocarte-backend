@@ -6,16 +6,16 @@ import models
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
 
-@when('I edit the form "{form_title}" generated for the exposed role "{role_name}" setting three form fields') 
+@when('I edit the form "{form_title}" generated for the open role "{role_name}" setting three form fields') 
 def step_impl(context, form_title, role_name):
     url = settings.backend_url + "/forms"
     session = SessionLocal()
     try:
-        exposed_role = session.query(models.ExposedRole).filter(and_(
-                models.ExposedRole.casting_call_id == context.casting_call_id,
-                models.ExposedRole.role_id == context.role_id
+        open_role = session.query(models.OpenRole).filter(and_(
+                models.OpenRole.casting_call_id == context.casting_call_id,
+                models.OpenRole.role_id == context.role_id
         )).first()
-        form = session.query(models.Form).filter(models.Form.id == exposed_role.form_id).first()
+        form = session.query(models.Form).filter(models.Form.id == open_role.form_id).first()
         form_fields_data = [{"title": "Instagram", "type": "text", "order": 0, "is_required": True},
                                 {"title": "Facebook", "type": "text", "order": 1, "is_required": False},
                                 {"title": "Nacionalidad", "type": "text", "order": 2, "is_required": False}]

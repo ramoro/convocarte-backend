@@ -23,7 +23,7 @@ class CastingCallRepository:
             self.db.flush() #Asi ya la variable se actualiza con el id generado para el casting
 
             #Por cada rol se crea un Form y sus FormFields a partir de un Form Template
-            #Y luego se agrega la informacion del rol expuesto en ExposedRole
+            #Y luego se agrega la informacion del rol expuesto en OpenRole
             for role in casting_roles:
                 form_template_associated = role['form_template']
                 #Se crea primero el Form y
@@ -51,7 +51,7 @@ class CastingCallRepository:
                 role['form_id'] = form.id
                 if role['has_limited_spots']:
                     role['occupied_spots'] = 0
-                new_role = models.ExposedRole(**role)
+                new_role = models.OpenRole(**role)
                 self.db.add(new_role)
 
             #Se actualiza el proyecto asociado con su nuevo estado
@@ -99,17 +99,17 @@ class CastingCallRepository:
             .filter(models.CastingCall.id == casting_call_id)
             .options(
                 joinedload(models.CastingCall.project),
-                joinedload(models.CastingCall.exposed_roles)
-                .joinedload(models.ExposedRole.role),  # Cargar el role de cada exposed role
-                joinedload(models.CastingCall.exposed_roles)
-                .joinedload(models.ExposedRole.form)   # Cargar el form de cada exposed role
+                joinedload(models.CastingCall.open_roles)
+                .joinedload(models.OpenRole.role),  # Cargar el role de cada open role
+                joinedload(models.CastingCall.open_roles)
+                .joinedload(models.OpenRole.form)   # Cargar el form de cada open role
             )  
             .first()
         )
     
         return casting_call
 
-    def update_casting_call_with_exposed_roles(self, casting_call_id, updated_casting_call, updated_roles, 
+    def update_casting_call_with_open_roles(self, casting_call_id, updated_casting_call, updated_roles, 
                                                deleted_photos_names, new_photos_names):
         """Recibe el id de un casting, un diccionario con los datos actualizados del casting, la lista de los roles 
         expuestos actualizados (cada uno es un diccionario con su data), una lista con los nombres de las fotos eliminadas 
@@ -140,8 +140,8 @@ class CastingCallRepository:
 
             #Actualiza los roles expuestos
             for role in updated_roles:
-                self.db.query(models.ExposedRole).\
-                filter(models.ExposedRole.id == role['id']).update(role, synchronize_session=False)
+                self.db.query(models.OpenRole).\
+                filter(models.OpenRole.id == role['id']).update(role, synchronize_session=False)
 
             self.db.commit()
             return updated_casting_call, ""
@@ -193,7 +193,7 @@ class CastingCallRepository:
                     models.CastingCall.deleted_at == None  # No eliminados
                 )
                 # Cargar projecto y roles asociados a CastingCall:
-            ).options(joinedload(models.CastingCall.project), joinedload(models.CastingCall.exposed_roles))  
+            ).options(joinedload(models.CastingCall.project), joinedload(models.CastingCall.open_roles))  
 
             # Filtrar por date_order (Ascendente o Descendente)
             if casting_filters.date_order == "Ascendente":
@@ -206,14 +206,14 @@ class CastingCallRepository:
             # tambien agarra los castings que no setearon filtro de edad
             if casting_filters.age is not None:
                 query = query.filter(
-                    models.CastingCall.exposed_roles.any(
+                    models.CastingCall.open_roles.any(
                         and_(
-                            models.ExposedRole.disabled == False, #El rol a evaluar debe estar habilitado
+                            models.OpenRole.disabled == False, #El rol a evaluar debe estar habilitado
                             or_(
-                                and_(models.ExposedRole.min_age_required <= casting_filters.age, models.ExposedRole.max_age_required >= casting_filters.age),
-                                and_(models.ExposedRole.min_age_required <= casting_filters.age, models.ExposedRole.max_age_required == None),
-                                and_(models.ExposedRole.min_age_required == None, models.ExposedRole.max_age_required >= casting_filters.age),
-                                and_(models.ExposedRole.min_age_required == None, models.ExposedRole.max_age_required == None)
+                                and_(models.OpenRole.min_age_required <= casting_filters.age, models.OpenRole.max_age_required >= casting_filters.age),
+                                and_(models.OpenRole.min_age_required <= casting_filters.age, models.OpenRole.max_age_required == None),
+                                and_(models.OpenRole.min_age_required == None, models.OpenRole.max_age_required >= casting_filters.age),
+                                and_(models.OpenRole.min_age_required == None, models.OpenRole.max_age_required == None)
                             )
                         )
 
@@ -223,14 +223,14 @@ class CastingCallRepository:
             # Si trae filtro de altura, idem que por edad
             if casting_filters.height is not None:
                 query = query.filter(
-                    models.CastingCall.exposed_roles.any(
+                    models.CastingCall.open_roles.any(
                         and_(
-                            models.ExposedRole.disabled == False, #El rol a evaluar debe estar habilitado
+                            models.OpenRole.disabled == False, #El rol a evaluar debe estar habilitado
                             or_(
-                                and_(models.ExposedRole.min_height_required <= casting_filters.height, models.ExposedRole.max_height_required >= casting_filters.height),
-                                and_(models.ExposedRole.min_height_required <= casting_filters.height, models.ExposedRole.max_height_required == None),
-                                and_(models.ExposedRole.min_height_required == None, models.ExposedRole.max_height_required >= casting_filters.height),
-                                and_(models.ExposedRole.min_height_required == None, models.ExposedRole.max_height_required == None)
+                                and_(models.OpenRole.min_height_required <= casting_filters.height, models.OpenRole.max_height_required >= casting_filters.height),
+                                and_(models.OpenRole.min_height_required <= casting_filters.height, models.OpenRole.max_height_required == None),
+                                and_(models.OpenRole.min_height_required == None, models.OpenRole.max_height_required >= casting_filters.height),
+                                and_(models.OpenRole.min_height_required == None, models.OpenRole.max_height_required == None)
                             )
                         ) 
                     )
@@ -256,16 +256,16 @@ class CastingCallRepository:
                 or_conditions = []
                 for hair_color in casting_filters.hair_colors:
                     or_conditions.append(
-                        models.ExposedRole.hair_colors_required.ilike(f"%{hair_color}%")
+                        models.OpenRole.hair_colors_required.ilike(f"%{hair_color}%")
                     )
                 
                 query = query.filter(
-                    models.CastingCall.exposed_roles.any(
+                    models.CastingCall.open_roles.any(
                         and_(
-                            models.ExposedRole.disabled == False,  # El rol a evaluar debe estar habilitado
+                            models.OpenRole.disabled == False,  # El rol a evaluar debe estar habilitado
                             or_(*or_conditions,
-                                models.ExposedRole.hair_colors_required == "", # si casting no trae filtro de pelos, se devuelve tambien
-                                models.ExposedRole.hair_colors_required == None)  
+                                models.OpenRole.hair_colors_required == "", # si casting no trae filtro de pelos, se devuelve tambien
+                                models.OpenRole.hair_colors_required == None)  
                         )
                     )
                 )
@@ -284,13 +284,13 @@ class CastingCallRepository:
             if casting_call:
                 # Se eliminan los roles expuestos en el casting y sus
                 # forms generados
-                for exposed_role in casting_call.exposed_roles:
-                    if exposed_role.form:
-                        exposed_role.form.deleted_at = datetime.now(timezone.utc)
-                        self.db.add(exposed_role.form)
+                for open_role in casting_call.open_roles:
+                    if open_role.form:
+                        open_role.form.deleted_at = datetime.now(timezone.utc)
+                        self.db.add(open_role.form)
                     
-                    exposed_role.deleted_at = datetime.now(timezone.utc)
-                    self.db.add(exposed_role)
+                    open_role.deleted_at = datetime.now(timezone.utc)
+                    self.db.add(open_role)
                 # Marco el CastingCall como eliminado con la fecha
                 # pero no lo borro de la bdd para tenerlo como historial
                 casting_call.deleted_at = datetime.now(timezone.utc)
@@ -315,12 +315,12 @@ class CastingCallRepository:
             .filter(models.CastingCall.id == casting_call_id)
             .options(
                 joinedload(models.CastingCall.project),
-                joinedload(models.CastingCall.exposed_roles)
-                .joinedload(models.ExposedRole.role),  # Cargar el role de cada exposed role
-                joinedload(models.CastingCall.exposed_roles)
-                .joinedload(models.ExposedRole.form),   # Cargar el form de cada exposed role
-                joinedload(models.CastingCall.exposed_roles)
-                .joinedload(models.ExposedRole.casting_postulations) # Cargar postulaciones de cada exposed role
+                joinedload(models.CastingCall.open_roles)
+                .joinedload(models.OpenRole.role),  # Cargar el role de cada open role
+                joinedload(models.CastingCall.open_roles)
+                .joinedload(models.OpenRole.form),   # Cargar el form de cada open role
+                joinedload(models.CastingCall.open_roles)
+                .joinedload(models.OpenRole.casting_postulations) # Cargar postulaciones de cada open role
                 .joinedload(models.CastingPostulation.messages) #Cargar mensajes de cada postulacion para saber si hay mensajes sin leer
             )  
             .first()
@@ -328,8 +328,8 @@ class CastingCallRepository:
 
         if casting_call:
             # Procesar cada postulación para agregar info de mensajes no leídos
-            for exposed_role in casting_call.exposed_roles:
-                for postulation in exposed_role.casting_postulations:
+            for open_role in casting_call.open_roles:
+                for postulation in open_role.casting_postulations:
                     # Contar mensajes no leídos donde el emisor no es el usuario actual
                     unread_count = sum(
                         1 for message in postulation.messages 

@@ -7,7 +7,7 @@ class Role(BaseModel):
     name: str
     description: str
 
-class ExposedRole(BaseModel):
+class OpenRole(BaseModel):
     id: int
     role: Role
 
@@ -16,7 +16,7 @@ class CastingPostulationResponse(BaseModel):
     state: str
     postulation_data: str
     casting_call: CastingCallPreviewResponse
-    exposed_role: ExposedRole
+    open_role: OpenRole
     created_at: datetime
     owner_id: int
 

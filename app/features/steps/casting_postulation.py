@@ -6,7 +6,7 @@ from environment import SessionLocal
 from sqlalchemy import and_
 import json
 from datetime import datetime, timedelta
-from repository.exposed_role import ExposedRoleRepository
+from repository.open_role import OpenRoleRepository
 
 @given('there is a project with name "{project_name}" with an associated role called "{role_name}"')
 def step_impl(context, project_name, role_name):
@@ -30,7 +30,7 @@ def step_impl(context, project_name, role_name):
     response = requests.post(url, json=project_data, headers=headers)
     context.project_id = response.json()["id"]
 
-@given('there is a casting call published for that project exposing the role "{role_name}" with {spots_limit} spots')
+@given('there is a casting call published for that project opening the role "{role_name}" with {spots_limit} spots')
 def step_impl(context, role_name, spots_limit):
     url = settings.backend_url + "/casting-calls/"
 
@@ -121,15 +121,15 @@ def step_impl(context):
     finally:
         session.close()
 
-@given('the exposed role "{role_name}" has all its {spots_amount} spots full')
+@given('the open role "{role_name}" has all its {spots_amount} spots full')
 def step_impl(context, role_name, spots_amount):
     session = SessionLocal() 
-    exposed_role = session.query(models.ExposedRole).filter(and_(
-    models.ExposedRole.casting_call_id == context.casting_call_id,
-    models.ExposedRole.role_id == context.role_id
+    open_role = session.query(models.OpenRole).filter(and_(
+    models.OpenRole.casting_call_id == context.casting_call_id,
+    models.OpenRole.role_id == context.role_id
     )).first()
-    exposed_role_respository = ExposedRoleRepository(session)
-    exposed_role_respository.update_occupied_spots(exposed_role.id, spots_amount)
+    open_role_respository = OpenRoleRepository(session)
+    open_role_respository.update_occupied_spots(open_role.id, spots_amount)
 
 def make_postulation(context):
     url = settings.backend_url + "/casting-postulations/"
@@ -137,13 +137,13 @@ def make_postulation(context):
     session = SessionLocal()
     try:
 
-        exposed_role = session.query(models.ExposedRole).filter(and_(
-        models.ExposedRole.casting_call_id == context.casting_call_id,
-        models.ExposedRole.role_id == context.role_id
+        open_role = session.query(models.OpenRole).filter(and_(
+        models.OpenRole.casting_call_id == context.casting_call_id,
+        models.OpenRole.role_id == context.role_id
         )).first()
-        context.exposed_role_id = exposed_role.id
+        context.open_role_id = open_role.id
         postulation_data = {
-            "form_id": exposed_role.form_id,
+            "form_id": open_role.form_id,
             "postulation_data": json.dumps({"Instagram": "https://www.instagram.com/username"})
         }
 
@@ -156,16 +156,16 @@ def make_postulation(context):
     finally:
         session.close()  
 
-@given('I postulate for the exposed role "{role_name}" within the published casting')
+@given('I postulate for the open role "{role_name}" within the published casting')
 def step_impl(context, role_name):
     make_postulation(context)
 
-@when('I postulate for the exposed role "{role_name}" within the published casting')
+@when('I postulate for the open role "{role_name}" within the published casting')
 def step_impl(context, role_name):
     make_postulation(context)
 
 
-@then('a postulation for that casting call and that exposed role should be succesfully created in the system')
+@then('a postulation for that casting call and that open role should be succesfully created in the system')
 def step_impl(context):
     session = SessionLocal()
     try:
@@ -190,9 +190,9 @@ def step_impl(context):
 def step_impl(context):
     assert "casting call for this role is paused" in context.response.text, "Expected error message not found"
 
-@then('the user should be notified that the role exposed for this casting call is full')
+@then('the user should be notified that the open role for this casting call is full')
 def step_impl(context):
-    assert "role exposed for this casting call is full" in context.response.text, "Expected error message not found"
+    assert "role open for this casting call is full" in context.response.text, "Expected error message not found"
 
 @then('the user should be notified that they has already postulated for that role')
 def step_impl(context):
