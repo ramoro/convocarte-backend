@@ -43,7 +43,7 @@ def create_and_log_in_account(context, session):
     return response
 
 @given('Im logged in on the platform with my account')
-def step_impl(context):
+def step_given_im_logged_in(context):
     session = SessionLocal()
     try:
         response = create_and_log_in_account(context, session)
@@ -116,7 +116,7 @@ def step_when_create_casting_call(context, project_name, role_name, template_tit
         session.close()
 
 @then('a casting call with the title "{casting_call_title}" should be created successfully as draft')
-def step_impl(context, casting_call_title):
+def step_then_casting_call_created(context, casting_call_title):
     session = SessionLocal()
     try:
         casting_call = context.database.query(models.CastingCall).filter(models.CastingCall.title == casting_call_title).first()
@@ -126,7 +126,7 @@ def step_impl(context, casting_call_title):
         session.close()
 
 @then('a form should be created successfully for the casting role with the same title and same fields that the form template "{form_title}"')
-def step_impl(context, form_title):
+def step_then_form_created_for_casting_role(context, form_title):
     session = SessionLocal()
     try:
         form = context.database.query(models.Form).filter(and_(
@@ -139,7 +139,7 @@ def step_impl(context, form_title):
         session.close()
 
 @when('I create a casting call for the project "{project_name}" without associating any roles to it')
-def step_impl(context, project_name):
+def step_when_create_casting_without_roles(context, project_name):
     url = settings.backend_url + "/casting-calls/"
 
     session = SessionLocal()
@@ -162,7 +162,7 @@ def step_impl(context, project_name):
         session.close()
 
 @when('I create a casting call associating the role "{role_name}" without assigning a form template to it')
-def step_impl(context, role_name):
+def step_when_create_casting_with_role_and_no_form_template(context, role_name):
     url = settings.backend_url + "/casting-calls/"
 
     session = SessionLocal()
@@ -192,19 +192,19 @@ def step_impl(context, role_name):
         session.close()
 
 @then('no casting call should be created in the system')
-def step_impl(context):
+def step_then_no_casting_created(context):
     assert context.response.status_code != 201, f"Unexpected status code: {context.response.status_code}, response: {context.response.text}"
 
 @then('the user should be notified that the casting call must have at least one role associated')
-def step_impl(context):
+def step_then_user_notified_casting_must_have_at_least_one_role(context):
     assert ("Field required" in context.response.text and "casting_roles" in context.response.text), "Expected error message not found"
 
 @then('the user should be notified that each role must have a form template assigned')
-def step_impl(context):
+def step_then_user_notified_roles_must_have_form_template_assigned(context):
     assert "Form template is required for each role." in context.response.text, "Expected error message not found"
 
 @when('I publish the casting call "{casting_call_title}" with an expiration date greater than the current date')
-def step_impl(context, casting_call_title):
+def step_when_publish_casting(context, casting_call_title):
     url = settings.backend_url + "/casting-calls/publish/{casting_id}"
     session = SessionLocal()
     try:
@@ -225,7 +225,7 @@ def step_impl(context, casting_call_title):
         session.close()
 
 @then('the casting call should be successfully published')
-def step_impl(context):
+def step_then_casting_published(context):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
@@ -272,7 +272,7 @@ def step_given_casting_call_created(context, project_name, role_name, template_t
         session.close()
 
 @given('I publish the casting call with an expiration date greater than the current date')
-def step_impl(context):
+def step_given_publish_casting_expiration_date_grater_current_date(context):
     url = settings.backend_url + "/casting-calls/publish/{casting_id}"
     session = SessionLocal()
     try:
@@ -293,7 +293,7 @@ def step_impl(context):
         session.close()
 
 @given('I pause the casting call publication')
-def step_impl(context):
+def step_given_casting_publication_paused(context):
     url = settings.backend_url + "/casting-calls/pause/{casting_id}"
     session = SessionLocal()
     try:
@@ -311,7 +311,7 @@ def step_impl(context):
         session.close()
 
 @when('I publish the casting call "{casting_call_title}" with an expiration date less than the current date')
-def step_impl(context, casting_call_title):
+def step_when_publish_casting_expiration_date_less_than_current_date(context, casting_call_title):
     url = settings.backend_url + "/casting-calls/publish/{casting_id}"
     session = SessionLocal()
     try:
@@ -332,20 +332,20 @@ def step_impl(context, casting_call_title):
         session.close()
 
 @then('the casting call should not be published')
-def step_impl(context):
+def step_then_casting_not_published(context):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
-        assert casting_call.state != "Publicado", f"Casting call was incorrectly published."
+        assert casting_call.state != "Publicado", "Casting call was incorrectly published."
     finally:
         session.close()
 
 @then('the user should be notified that the expiration date must be greater than the current date')
-def step_impl(context):
+def step_user_notified_expiration_date_must_be_greater_than_current_date(context):
     assert "Expiration date must be after the current date" in context.response.text, "Expected error message not found."
 
 @given('I finish the casting call')
-def step_impl(context):
+def step_given_casting_call_ended(context):
     url = settings.backend_url + "/casting-calls/finish/{casting_id}"
     session = SessionLocal()
     try:
@@ -365,11 +365,11 @@ def step_impl(context):
         session.close()
 
 @then('the user should be notified that the casting cannot be published because it has already ended')
-def step_impl(context):
+def step_then_user_notified_casting_cannot_published_its_ended(context):
     assert "The casting cannot be published because it has already ended" in context.response.text, "Expected error message not found."
 
 @when('I pause the casting call')
-def step_impl(context):
+def step_pause_casting(context):
     url = settings.backend_url + "/casting-calls/pause/{casting_id}"
     session = SessionLocal()
     try:
@@ -388,7 +388,7 @@ def step_impl(context):
         session.close()
 
 @then('the casting call should be successfully paused')
-def step_impl(context):
+def step_then_casting_paused(context):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
@@ -397,24 +397,24 @@ def step_impl(context):
         session.close()
 
 @then('the casting call should not be paused')
-def step_impl(context):
+def step_then_casting_not_paused(context):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
-        assert casting_call.state != "Pausado", f"Casting call was incorrectly paused."
+        assert casting_call.state != "Pausado", "Casting call was incorrectly paused."
     finally:
         session.close()
 
 @then("the user should be notified that the casting cannot be paused because it hasn't been published yet")
-def step_impl(context):
+def step_then_user_notified_casting_cannot_be_paused_it_hasnt_been_published(context):
     assert "casting cannot be paused because it hasn't been published yet" in context.response.text, "Expected error message not found."
 
 @then("the user should be notified that the casting cannot be paused because it has already ended")
-def step_impl(context):
+def step_then_user_notified_casting_cannot_be_paused_its_ended(context):
     assert "casting cannot be paused because it has already ended" in context.response.text, "Expected error message not found."
 
 @when('I finish the casting call')
-def step_impl(context):
+def step_when_casing_ended(context):
     url = settings.backend_url + "/casting-calls/finish/{casting_id}"
     session = SessionLocal()
     try:
@@ -433,7 +433,7 @@ def step_impl(context):
         session.close()
 
 @then('the casting call should be successfully finished')
-def step_impl(context):
+def step_then_casting_ended(context):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
@@ -442,7 +442,7 @@ def step_impl(context):
         session.close()
 
 @then('the casting call should not be finished')
-def step_impl(context):
+def step_casting_not_ended(context):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
@@ -451,11 +451,11 @@ def step_impl(context):
         session.close()
 
 @then("the user should be notified that the casting cannot be finished because it hasn't been published yet")
-def step_impl(context):
+def step_then_user_notified_casting_cannot_be_ended_it_hasnt_been_published(context):
     assert "casting cannot be finished because it hasn't been published yet" in context.response.text, "Expected error message not found."
 
-@given('a user that has a published casting with title "{other_casting_title}" and open role "{role_name}"')
-def step_impl(context, other_casting_title, role_name):
+@given('a user that has a published {casting_category} casting with title "{other_casting_title}" and open role "{role_name}"')
+def step_given_user_has_casting_published(context, other_casting_title, role_name, casting_category):
     session = SessionLocal()
     try:
         #Creamos otro usuario de prueba y lo logeamos para crear lo necesario para publicar un casting
@@ -474,7 +474,7 @@ def step_impl(context, other_casting_title, role_name):
         #Le creamos un proyecto y un casting asociado a ese proyecto con el titulo other_casting_title
         url = settings.backend_url + "/projects/"
         role_data = {"name": role_name}
-        project_data = {"name": "Matrix y algo mas", "region": "CABA", "category": "Cine-largometraje", "roles": [role_data]}
+        project_data = {"name": "Matrix y algo mas", "region": "CABA", "category": casting_category, "roles": [role_data]}
         headers = {
             "Authorization": f"Bearer {token}"
         }
@@ -524,11 +524,11 @@ def step_impl(context, other_casting_title, role_name):
         session.close()
 
 @then('the user should be notified that there is already a published casting with the title "{casting_title}"')
-def step_impl(context, casting_title):
+def step_then_user_notified_casting_arleady_published_with_that_name(context, casting_title):
     assert f"there is already a published casting with the title {casting_title}" in context.response.text, "Expected error message not found."
 
 @when('I edit the casting call "{current_casting_title}" with the title "{new_casting_title}" and its role "{role_name}" with minimum age requirement "{min_age_required}"')
-def step_impl(context, current_casting_title, new_casting_title, role_name, min_age_required):
+def step_when_update_casting(context, current_casting_title, new_casting_title, role_name, min_age_required):
     url = settings.backend_url + "/casting-calls/{casting_id}"
     session = SessionLocal()
     try:
@@ -564,20 +564,20 @@ def step_impl(context, current_casting_title, new_casting_title, role_name, min_
         session.close()
 
 @then('the casting call should be successfully updated with the title "{new_casting_title}" and its role "{role_name}" should have a minimum age requirement of "{min_age_required}"')
-def step_impl(context, new_casting_title, role_name, min_age_required):
+def step_then_casting_updated(context, new_casting_title, role_name, min_age_required):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
         #filtrar el rol con el id igual al updated_role_id del contexto
         updated_open_role = casting_call.open_roles[0]
         
-        assert casting_call.title == new_casting_title, f"Casting call was not updated."
-        assert updated_open_role.min_age_required == int(min_age_required), f"Casting call role was not updated."
+        assert casting_call.title == new_casting_title, "Casting call was not updated."
+        assert updated_open_role.min_age_required == int(min_age_required), "Casting call role was not updated."
     finally:
         session.close()
 
 @then('the casting call should not be successfully updated with the title "{new_casting_title_failed}" and its role "{role_name}" with minimum age requirement "{min_age_required}"')
-def step_impl(context, new_casting_title_failed, role_name, min_age_required):
+def step_then_casting_not_updated(context, new_casting_title_failed, role_name, min_age_required):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
@@ -589,15 +589,15 @@ def step_impl(context, new_casting_title_failed, role_name, min_age_required):
         session.close()
 
 @then('the user should be notified that the casting must be paused to be updated')
-def step_impl(context):
+def step_then_user_notified_casting_must_be_paused_to_be_updated(context):
     assert "casting must be paused to be updated" in context.response.text, "Expected error message not found."
 
 @then('the user should be notified that the casting has finished and cant be edited')
-def step_impl(context):
+def step_then_user_notified_casting_has_finished(context):
     assert "casting has finished and cant be edited" in context.response.text, "Expected error message not found."
 
 @when('I try to delete the casting call')
-def step_impl(context):
+def step_when_delete_casting(context):
     url = settings.backend_url + "/casting-calls/{casting_id}"
     session = SessionLocal()
     try:
@@ -622,7 +622,7 @@ def step_then_casting_call_deleted(context):
         session.close()
 
 @then('the casting call forms should desappear from the system')
-def step_impl(context):
+def step_then_casting_deleted(context):
     session = SessionLocal()
     try:
         forms = context.database.query(models.Form).filter(models.Form.casting_call_id == context.casting_call_id).all()
@@ -631,7 +631,7 @@ def step_impl(context):
         session.close()
 
 @then('the casting call should not be eliminated from the system')
-def step_impl(context):
+def step_then_casting_not_deleted(context):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
@@ -643,9 +643,31 @@ def step_impl(context):
     finally:
         session.close()
 @then('the user should be notified that the casting call cant be deleted cause its published')
-def step_impl(context):
+def step_then_user_notified_casting_cant_be_deleted_its_published(context):
     assert "casting call cant be deleted cause its published" in context.response.text, "Expected error message not found."
 
 @then('the user should be notified that the casting call cant be deleted cause its paused')
-def step_impl(context):
+def step_then_user_notified_casting_cant_be_deleted_its_paused(context):
     assert "casting call cant be deleted cause its paused" in context.response.text, "Expected error message not found."
+
+@when('I try to search for {casting_category} castings')
+def step_when_search_for_casting(context, casting_category):
+    url = settings.backend_url + "/casting-calls/published"
+    session = SessionLocal()
+    search_data = {"date_order": "Ascendente", "categories": [casting_category]}
+    try:
+        headers = {
+            "Authorization": f"Bearer {context.token}"
+        }
+        response = requests.post(url, json=search_data ,headers=headers)
+        context.response = response.json()
+    finally:
+        session.close()
+
+@then('the system displays the casting as a result')
+def step_then_system_displays_casting(context):
+    assert any(casting['id'] == context.casting_call_id for casting in context.response) == context.casting_call_id, "Casting was not founded"
+
+@then('the system does not show any castings as results')
+def step_then_system_does_not_show_results(context):
+    assert len(context.response) == 0, "A casting was found when it shouldn't have been"
