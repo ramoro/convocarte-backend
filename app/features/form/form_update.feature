@@ -1,7 +1,7 @@
-Feature: Form Edition
+Feature: Form Update
   As a casting director
   I want to be able to edit a form of an open role within a casting
-  So that other artists can enter the new information that i need to evaluate them
+  So that other artists can see the new information that i need to evaluate them
 
   Scenario: Successful Form Edition of an open role within an unpublished casting
     Given Im logged in on the platform with my account
@@ -9,8 +9,8 @@ Feature: Form Edition
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix" with one form field
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a form template with title "Form for Matrix" and one form field
+    And I create a Project called "Matrix 4" with a role called "Neo"
     When I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
@@ -24,8 +24,8 @@ Feature: Form Edition
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a form template with title "Form for Matrix" and some form fields
+    And I create a Project called "Matrix 4" with a role called "Neo"
     And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
@@ -41,8 +41,8 @@ Feature: Form Edition
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a form template with title "Form for Matrix" and some form fields
+    And I create a Project called "Matrix 4" with a role called "Neo"
     And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
@@ -58,8 +58,8 @@ Feature: Form Edition
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a form template with title "Form for Matrix" and some form fields
+    And I create a Project called "Matrix 4" with a role called "Neo"
     And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |

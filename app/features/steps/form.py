@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
 
 @given('I create a form template with title "{template_title}" and one form field')
-def step_impl(context, template_title):
+def step_given_create_form_template(context, template_title):
     url = settings.backend_url + "/form-templates/"
     form_template_field_data = {"title": "Instagram", "type": "text", "order": 0, "is_required": True}
     form_template_data = {"form_template_title": template_title, "form_template_fields": [form_template_field_data]}
@@ -20,7 +20,7 @@ def step_impl(context, template_title):
     context.responsejson = response.json()
 
 @when('I edit the form "{form_title}" generated for the open role "{role_name}" setting three form fields') 
-def step_impl(context, form_title, role_name):
+def step_when_update_form_for_open_role(context, form_title, role_name):
     url = settings.backend_url + "/forms"
     session = SessionLocal()
     try:
@@ -48,7 +48,7 @@ def step_impl(context, form_title, role_name):
         session.close()
 
 @then('form "{form_title}" associated to the role "{role_name}" within the casting call "{casting_call_title}" should have "{form_fields_amount}" form fields')
-def step_impl(context, form_title, role_name, casting_call_title, form_fields_amount):
+def step_then_form_updated(context, form_title, role_name, casting_call_title, form_fields_amount):
     session = SessionLocal()
     try:
         form = (
@@ -61,7 +61,7 @@ def step_impl(context, form_title, role_name, casting_call_title, form_fields_am
     finally:
         session.close()
 @then('the form "{form_title}" associated to the role "{role_name}" within the casting call "{casting_call_title}" should not have "{form_fields_amount}" more fields')
-def step_impl(context, form_title, role_name, casting_call_title, form_fields_amount):
+def step_then_form_not_updated(context, form_title, role_name, casting_call_title, form_fields_amount):
     session = SessionLocal()
     try:
         form = (
@@ -75,9 +75,9 @@ def step_impl(context, form_title, role_name, casting_call_title, form_fields_am
         session.close()
 
 @then('the user should be notified that the form cant be updated cause it belongs to a published casting call')
-def step_impl(context):
+def step_then_user_notified_form_cant_be_updated_belongs_published_casting(context):
     assert "cant be updated cause its casting call is published" in context.response.text, "Expected error message not found"
 
 @then('the user should be notified that the form cant be updated cause it belongs to a finished casting call')
-def step_impl(context):
+def step_then_user_notified_form_cant_be_updated_belongs_ended_casting(context):
     assert "cant be updated cause its casting call has finished" in context.response.text, "Expected error message not found"

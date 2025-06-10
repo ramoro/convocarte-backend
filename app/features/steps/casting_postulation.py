@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from repository.open_role import OpenRoleRepository
 
 @given('there is a project with name "{project_name}" with an associated role called "{role_name}"')
-def step_impl(context, project_name, role_name):
+def step_given_existent_project_with_role(context, project_name, role_name):
     url = settings.backend_url + "/form-templates/"
     form_template_field_data = {"title": "Instagram", "type": "text", "order": 0, "is_required": True}
     form_template_data = {"form_template_title": "Matrix 4 Form Template", "form_template_fields": [form_template_field_data]}
@@ -31,7 +31,7 @@ def step_impl(context, project_name, role_name):
     context.project_id = response.json()["id"]
 
 @given('there is a casting call published for that project opening the role "{role_name}" with {spots_limit} spots')
-def step_impl(context, role_name, spots_limit):
+def step_given_casting_published_with_limited_spots(context, role_name, spots_limit):
     url = settings.backend_url + "/casting-calls/"
 
     session = SessionLocal()
@@ -82,7 +82,7 @@ def step_impl(context, role_name, spots_limit):
         session.close()
 
 @given('the casting is finished')
-def step_impl(context):
+def step_given_casting_ended(context):
     url = settings.backend_url + "/casting-calls/finish/{casting_id}"
     session = SessionLocal()
     try:
@@ -102,7 +102,7 @@ def step_impl(context):
         session.close()
 
 @given('the casting is paused')
-def step_impl(context):
+def step_given_casting_paused(context):
     url = settings.backend_url + "/casting-calls/pause/{casting_id}"
     session = SessionLocal()
     try:
@@ -122,7 +122,7 @@ def step_impl(context):
         session.close()
 
 @given('the open role "{role_name}" has all its {spots_amount} spots full')
-def step_impl(context, role_name, spots_amount):
+def step_given_open_role_has_spots_full(context, role_name, spots_amount):
     session = SessionLocal() 
     open_role = session.query(models.OpenRole).filter(and_(
     models.OpenRole.casting_call_id == context.casting_call_id,
@@ -153,20 +153,21 @@ def make_postulation(context):
 
         response = requests.post(url, data=postulation_data, headers=headers)
         context.response = response
+        context.postulation_id = context.response.json()["id"]
     finally:
         session.close()  
 
 @given('I postulate for the open role "{role_name}" within the published casting')
-def step_impl(context, role_name):
+def step_given_postulation_for_open_role(context, role_name):
     make_postulation(context)
 
 @when('I postulate for the open role "{role_name}" within the published casting')
-def step_impl(context, role_name):
+def step_when_postulate_for_open_role(context, role_name):
     make_postulation(context)
 
 
 @then('a postulation for that casting call and that open role should be succesfully created in the system')
-def step_impl(context):
+def step_then_postulation_created(context):
     session = SessionLocal()
     try:
         postulation = context.database.query(models.CastingPostulation).filter(and_(
@@ -179,21 +180,21 @@ def step_impl(context):
         session.close()
 
 @then('the postulation should not be created for the user')
-def step_impl(context):
+def step_then_postulation_not_created(context):
     assert context.response.status_code != 201, f"Unexpected status code: {context.response.status_code}, response: {context.response.text}"
 
 @then('the user should be notified that the casting has already finished')
-def step_impl(context):
+def step_then_user_notified_casting_finished(context):
     assert "casting call for this role has already finished" in context.response.text, "Expected error message not found"
 
 @then('the user should be notified that the casting is paused')
-def step_impl(context):
+def step_then_user_notified_casting_paused(context):
     assert "casting call for this role is paused" in context.response.text, "Expected error message not found"
 
 @then('the user should be notified that the open role for this casting call is full')
-def step_impl(context):
+def step_then_user_notified_open_role_is_full(context):
     assert "role open for this casting call is full" in context.response.text, "Expected error message not found"
 
 @then('the user should be notified that they has already postulated for that role')
-def step_impl(context):
+def step_then_user_notified_they_has_already_postulated_for_role(context):
     assert "user has already postulated for this role" in context.response.text, "Expected error message not found"

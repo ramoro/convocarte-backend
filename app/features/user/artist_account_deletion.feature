@@ -13,7 +13,7 @@ Feature: Artist Account Deletion
     Then the account is deleted from the system
 
   Scenario: Successful Artist Account Deletion With Postulation
-    Given a user that has a published casting with title "Searching Neo For Matrix 4" and open role "Neo"
+    Given a user that has a published theater casting with title "Searching Neo For Matrix 4" and open role "Neo"
       | field                | value               |
       | fullname             | Albus Dumbledore    |
       | email                | albus@bigwizard.com |
