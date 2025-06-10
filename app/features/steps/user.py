@@ -68,6 +68,7 @@ def step_impl(context, template_title):
     
     response = requests.post(url, json=form_template_data, headers=headers)
     context.response = response
+    context.responsejson = response.json()
     context.form_template_id = context.responsejson["id"]
 
 @then('the form template is deleted from the system')
@@ -174,7 +175,7 @@ def step_then_weight_and_height_other_user_not_updated(context, weight_value, he
     session = SessionLocal()
     try:
         user = context.database.query(models.User) \
-            .filter(models.User.id == context.user_id).first()
+            .filter(models.User.id == context.other_user_id).first()
         assert user.weight != float(weight_value), "Weight was incorrectly updated"
         assert user.height != float(height_value), "Height was incorrectly updated"
 

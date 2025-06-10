@@ -304,7 +304,7 @@ def update_user_partially(user_id: int, updated_data: UpdateUser, current_user: 
         raise HTTPException(status_code=404, detail=f"User with id {user_id} not found")
     
     if current_user.id != user_id:
-        raise HTTPException(status_code=404, 
+        raise HTTPException(status_code=401, 
                             detail=f"User id {user_id} does not match with logged-in user id." +
                              "Cannot update other user information")
 

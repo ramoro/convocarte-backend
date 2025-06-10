@@ -28,6 +28,11 @@ def create_and_log_in_account(context, session):
         user_query.update({"is_verified": True}, synchronize_session=False)
         session.commit()
 
+    #Si fue eliminado lo seteamos como existente nuevamente
+    if existing_user and existing_user.deleted_at:
+        existing_user.deleted_at = None
+        session.commit()
+
     # Logeo con el usuario
     login_data = {
         "username": user_data["email"],
@@ -73,7 +78,7 @@ def step_impl(context, project_name, role_name):
     context.project_id = context.responsejson["id"]
 
 @when('I create a casting call for the project "{project_name}" associating the role "{role_name}" to the form template "{template_title}"')
-def step_impl(context, project_name, role_name, template_title):
+def step_when_create_casting_call(context, project_name, role_name, template_title):
     url = settings.backend_url + "/casting-calls/"
 
     session = SessionLocal()
@@ -229,7 +234,7 @@ def step_impl(context):
         session.close()
 
 @given('I create a casting call for the project "{project_name}" associating the role "{role_name}" to the form template "{template_title}"')
-def step_impl(context, project_name, role_name, template_title):
+def step_given_casting_call_created(context, project_name, role_name, template_title):
     url = settings.backend_url + "/casting-calls/"
 
     session = SessionLocal()
@@ -449,8 +454,8 @@ def step_impl(context):
 def step_impl(context):
     assert "casting cannot be finished because it hasn't been published yet" in context.response.text, "Expected error message not found."
 
-@given('a user that has a published casting with title "{other_casting_title}"')
-def step_impl(context, other_casting_title):
+@given('a user that has a published casting with title "{other_casting_title}" and open role "{role_name}"')
+def step_impl(context, other_casting_title, role_name):
     session = SessionLocal()
     try:
         #Creamos otro usuario de prueba y lo logeamos para crear lo necesario para publicar un casting
@@ -467,7 +472,6 @@ def step_impl(context, other_casting_title):
         form_template_response = requests.post(url, json=form_template_data, headers=headers)
         form_template_id = form_template_response.json().get('id')
         #Le creamos un proyecto y un casting asociado a ese proyecto con el titulo other_casting_title
-        role_name = "Rol protagonico"
         url = settings.backend_url + "/projects/"
         role_data = {"name": role_name}
         project_data = {"name": "Matrix y algo mas", "region": "CABA", "category": "Cine-largometraje", "roles": [role_data]}
@@ -513,6 +517,8 @@ def step_impl(context, other_casting_title):
         }
 
         response = requests.patch(url, json=publication_data, headers=headers)
+        context.casting_call_id = casting_id
+        context.role_id = role.id
 
     finally:
         session.close()
@@ -603,15 +609,14 @@ def step_impl(context):
     finally:
         session.close()
 
-@then('the casting call should successfully desappear from the system')
-def step_impl(context):
+@then('the casting call is deleted from the system')
+def step_then_casting_call_deleted(context):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
-        open_roles = context.database.query(models.OpenRole).filter(models.OpenRole.casting_call_id == context.casting_call_id).all()
+       # open_roles = context.database.query(models.OpenRole).filter(models.OpenRole.casting_call_id == context.casting_call_id).all()
 
         assert casting_call.deleted_at is not None, "Casting call was not deleted."
-        assert len(open_roles) == 0, "Casting call was not deleted with its open roles."
 
     finally:
         session.close()

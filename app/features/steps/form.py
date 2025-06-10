@@ -6,6 +6,19 @@ import models
 from sqlalchemy.orm import joinedload
 from sqlalchemy import and_
 
+@given('I create a form template with title "{template_title}" and one form field')
+def step_impl(context, template_title):
+    url = settings.backend_url + "/form-templates/"
+    form_template_field_data = {"title": "Instagram", "type": "text", "order": 0, "is_required": True}
+    form_template_data = {"form_template_title": template_title, "form_template_fields": [form_template_field_data]}
+    
+    headers = {
+        "Authorization": f"Bearer {context.token}"
+    }
+    
+    response = requests.post(url, json=form_template_data, headers=headers)
+    context.responsejson = response.json()
+
 @when('I edit the form "{form_title}" generated for the open role "{role_name}" setting three form fields') 
 def step_impl(context, form_title, role_name):
     url = settings.backend_url + "/forms"
