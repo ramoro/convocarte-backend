@@ -1,7 +1,7 @@
-Feature: Project Edition
+Feature: Project Update
   As a casting director
-  I want to be able to edit a project and its roles so 
-  So I can update it if I change my mind about what the project will be like and what roles will make it up
+  I want to be able to update a project and its roles so 
+  So I can modify it if I change my mind about what the project will be like and what roles will make it up
 
   Scenario: Successful edition of a project with no associated casting 
     Given Im logged in on the platform with my account
@@ -9,7 +9,7 @@ Feature: Project Edition
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a Project called "Matrix 4" with a role called "Neo"
     When I try to edit project name, project description and role name
     | field                    | value                           |
     | new_name                 | Matrix renovado 4               |
@@ -25,8 +25,8 @@ Feature: Project Edition
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a form template with title "Form for Matrix" and some form fields
+    And I create a Project called "Matrix 4" with a role called "Neo"
     And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
@@ -47,8 +47,8 @@ Feature: Project Edition
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a form template with title "Form for Matrix" and some form fields
+    And I create a Project called "Matrix 4" with a role called "Neo"
     And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
@@ -70,8 +70,8 @@ Feature: Project Edition
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a project with name "Harry Potter 4" and an associated role called "Harry"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a Project called "Harry Potter 4" with a role called "Harry"
+    And I create a Project called "Matrix 4" with a role called "Neo"
     When I try to edit project named "Matrix 4" with name "Harry Potter 4"
       | field                    | value                           |
       | new_name                 | Harry Potter 4                  |
@@ -88,7 +88,7 @@ Feature: Project Edition
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I create a project named "Matrix Movie" with two roles named "Neo" and "Trinity"
+    And I create a project called "Matrix Movie" with two roles named "Neo" and "Trinity"
     When I try to edit project setting two roles named "Neo"
       | field                    | value                           |
       | new_name                 | Harry Potter 4                  |

@@ -1,7 +1,7 @@
 Feature: Project Creation
   As a casting director
-  I want to be able to create a project
-  So i can bring together the people with whom I am going to work
+  I want to be able to create a project 
+  so that other people can see what I'm working on.
 
   Scenario: Successful Project creation
     Given Im logged in on the platform with my account
@@ -18,7 +18,7 @@ Feature: Project Creation
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a project named "Matrix Movie"
+    And I create a project named "Matrix Movie"
     When I create a project with name "Matrix Movie"
     Then the project should not be created for the user
     And the user should be notified that they already have a project with that name
@@ -29,7 +29,7 @@ Feature: Project Creation
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    When I create a project named "Matrix Movie" with two roles named "Neo"
+    When I create a project called "Matrix Movie" with two roles named "Neo"
     Then the project should not be created for the user
     And the user should be notified that the project shouldnt have more than one role with the same name
 
