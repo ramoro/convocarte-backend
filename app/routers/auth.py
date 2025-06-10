@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from starlette import status
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
 from database import get_db
 from schemas.auth import UserLogin
 import models
@@ -15,7 +16,9 @@ router = APIRouter(tags=['Authentication'])
 def login(user_credentials: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     #Con oauth ahora espera el email y la pass en form-data
     user = db.query(models.User).filter(
-        (models.User.email == user_credentials.username)
+        and_(models.User.email == user_credentials.username,
+             models.User.deleted_at == None
+            )
         ).first()
     
     if not user or not utils.verify(user_credentials.password, user.password):

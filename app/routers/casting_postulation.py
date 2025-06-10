@@ -268,11 +268,17 @@ def choose_postulation(postulation_id: int, db: Session = Depends(get_db)):
 
     casting_postulation_repository = CastingPostulationRepository(db)
     
-    chosen_casting_postulation = casting_postulation_repository.choose_casting_postulation(postulation_id)
+    chosen_casting_postulation = casting_postulation_repository.get_casting_postulation_by_id(postulation_id)
     
     if not chosen_casting_postulation:
         raise HTTPException(status_code=404, 
                             detail=f"Casting postulation with id {postulation_id} not found.")
+    
+    if "Eliminada" in chosen_casting_postulation.state:
+        raise HTTPException(status_code=400, 
+                    detail="The Casting postulation cant be chosen because it has been deleted.")
+    
+    casting_postulation_repository.choose_casting_postulation(postulation_id)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

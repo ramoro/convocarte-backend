@@ -15,6 +15,8 @@ class User(Base):
     is_verified = Column(Boolean, nullable=False, server_default=text('false'))
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
+    deleted_at = Column(TIMESTAMP(timezone=True), index=True)
+
     
     #Al eliminarlo tmbien se eliminan los form_templates, proyectos y castings asociados                
     form_templates = relationship("FormTemplate", back_populates="owner", cascade="all, delete")
@@ -216,6 +218,9 @@ class CastingCall(Base):
     open_roles = relationship("OpenRole", back_populates="casting_call")
     # Relación inversa con CastingPostulation
     casting_postulations = relationship("CastingPostulation", back_populates="casting_call")
+    # Relación inversa con Forms
+    forms = relationship("Form", back_populates="casting_call", cascade="all, delete-orphan") 
+
 
 class Form(Base):
     __tablename__ = "forms"
@@ -231,6 +236,9 @@ class Form(Base):
     form_fields = relationship("FormField", back_populates="form", cascade="all, delete-orphan")
     # Relación inversa con OpenRole
     open_roles = relationship("OpenRole", back_populates="form")
+    # Relación inversa con Form
+    casting_call = relationship("CastingCall", back_populates="forms")  
+
 
 class FormField(Base):
     __tablename__ = "form_fields"
@@ -271,7 +279,7 @@ class OpenRole(Base):
     role = relationship("Role", back_populates="open_roles")  # Relación con Role
     form = relationship("Form", back_populates="open_roles")  # Relación con Form
     
-    casting_postulations = relationship("CastingPostulation", back_populates="open_roles")
+    casting_postulations = relationship("CastingPostulation", back_populates="open_role")
 
     
 class CastingPostulation(Base):
@@ -288,7 +296,7 @@ class CastingPostulation(Base):
 
     # Relaciones
     casting_call = relationship("CastingCall", back_populates="casting_postulations")
-    open_roles = relationship("OpenRole", back_populates="casting_postulations")
+    open_role = relationship("OpenRole", back_populates="casting_postulations")
     
     # Relación inversa con Message
     messages = relationship("Message", back_populates="casting_postulation")

@@ -275,7 +275,10 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: models.U
     user = user_repository.get_user_by_id(user_id)
 
     if not user:
-        raise HTTPException(status_code=404, detail=f"User with {user_id} not found")
+        raise HTTPException(status_code=404, detail=f"User with id {user_id} not found")
+    
+    if user.deleted_at:
+        raise HTTPException(status_code=400, detail=f"User with id {user_id} has been deleted")
     
     if user.cv:
         #Si es corrida local uso el path local, sino la url para descargar desde google drive
@@ -298,7 +301,12 @@ def update_user_partially(user_id: int, updated_data: UpdateUser, current_user: 
     user = user_respository.get_user_by_id(user_id)
 
     if not user:
-        raise HTTPException(status_code=404, detail=f"User {user} not found")
+        raise HTTPException(status_code=404, detail=f"User with id {user_id} not found")
+    
+    if current_user.id != user_id:
+        raise HTTPException(status_code=404, 
+                            detail=f"User id {user_id} does not match with logged-in user id." +
+                             "Cannot update other user information")
 
     user_respository.update_user(user_id,  updated_data.model_dump(exclude_unset=True)) 
     #exclude_unset es para remover los campos que el usuario no seteo, sino los toma como null y pisa datos
@@ -307,45 +315,15 @@ def update_user_partially(user_id: int, updated_data: UpdateUser, current_user: 
        
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(user_id: int, db: Session = Depends(get_db), current_user: models.User = 
-                Depends(oauth2.get_current_user)):
+def delete_user(user_id: int, db: Session = Depends(get_db)):
 
-    #cursor.execute("""DELETE FROM users where id = %s returning *""", (str(user_id),))
-    #deleted_user = cursor.fetchone()
-    #conn.commit()
-    user = db.query(models.User).filter(models.User.id == user_id)
-    
-    if user.first() == None:
-        raise HTTPException(status_code=404, detail=f"User {user_id} not found")
-    
+    user_respository = UserRepository(db)
+    user = user_respository.get_user_by_id(user_id)
 
-    user.delete(synchronize_session=False)
-    db.commit()
+    if not user:
+        raise HTTPException(status_code=404, 
+                            detail=f"User with id {user_id} not found. Account couldnt be deleted cause it doesnt exists.")
     
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    user_respository.delete_user(user)
     
-
-# @router.put("/{user_id}", response_model=UserResponse)
-# def update_user(user_id: int, updated_user: UpdateUser, db: Session = Depends(get_db), current_user: models.User = 
-#                 Depends(oauth2.get_current_user)):
-#     #cursor.execute("""UPDATE users
-#     #               set username = %s,
-#     #               fullname = %s,
-#     #               email = %s,
-#     #               password = %s
-#     #               where id = %s
-#     #               returning *""", (user.username, user.fullname, user.email, user.password, user_id))
-#     #updated_user = cursor.fetchone()
-#     #conn.commit()
-
-#     user_query = db.query(models.User).filter(models.User.id == user_id)
-
-#     user = user_query.first()
-    
-#     if user == None:
-#         raise HTTPException(status_code=404, detail=f"User {user_id} not found")
-    
-#     user_query.update(updated_user.model_dump(), synchronize_session=False)
-#     db.commit()
-
-#     return user_query.first()
+    return
