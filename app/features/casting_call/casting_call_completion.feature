@@ -1,7 +1,7 @@
-Feature: Casting Call Pause
+Feature: Casting Call Completion
   As a casting director
-  I want to be able to publish a casting
-  So that other artists can apply, allowing me to evaluate them
+  I want to be able to finish a casting call
+  so that it is no longer visible and other users can no longer apply to it.
 
   Scenario: Successful Casting Call completion
     Given Im logged in on the platform with my account
@@ -9,8 +9,8 @@ Feature: Casting Call Pause
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a form template with title "Form for Matrix" and some form fields
+    And I create a Project called "Matrix 4" with a role called "Neo"
     And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
@@ -25,8 +25,8 @@ Feature: Casting Call Pause
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a form template with title "Form for Matrix" and some form fields
+    And I create a Project called "Matrix 4" with a role called "Neo"
     And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
@@ -42,8 +42,8 @@ Feature: Casting Call Pause
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a form template with title "Form for Matrix" and some form fields
+    And I create a Project called "Matrix 4" with a role called "Neo"
     And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |

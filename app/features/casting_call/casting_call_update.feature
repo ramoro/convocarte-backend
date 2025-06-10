@@ -1,73 +1,71 @@
-Feature: Casting Call Elimination
+Feature: Casting Call Update
   As a casting director
-  I want to be able to delete a casting call
-  So I can prevent people from applying for roles in a project that i wont finish
+  I want to be able to edit a casting and its roles
+  So that artists know the new requirements for the roles when they apply
 
-  Scenario: Successful Casting Call elimination
+  Scenario: Successful Casting Call Edition
     Given Im logged in on the platform with my account
     | field                | value                |
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a form template with title "Form for Matrix" and some form fields
+    And I create a Project called "Matrix 4" with a role called "Neo"
     When I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
       | remuneration_type         | Remunerado |
-    And I try to delete the casting call
-    Then the casting call should successfully desappear from the system
-    And the casting call forms should desappear from the system
+    And I edit the casting call "Searching Neo For Matrix 4" with the title "Searching Neo For Matrix 5" and its role "Neo" with minimum age requirement "25"
+    Then the casting call should be successfully updated with the title "Searching Neo For Matrix 5" and its role "Neo" should have a minimum age requirement of "25"
 
-  Scenario: Successful Finished Casting Call elimination
+  Scenario: Successful Edition of a Paused Casting Call
     Given Im logged in on the platform with my account
     | field                | value                |
     | fullname             | Frodo Bolson         |
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
-    And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
-      | field                     | value                      |
-      | title                     | Searching Neo For Matrix 4 |
-      | remuneration_type         | Remunerado |
-    And I publish the casting call with an expiration date greater than the current date
-    And I finish the casting call
-    When I try to delete the casting call
-    Then the casting call should successfully desappear from the system
-    And the casting call forms should desappear from the system
-
-  Scenario: Unsuccessful Published Casting Call elimination
-    Given Im logged in on the platform with my account
-    | field                | value                |
-    | fullname             | Frodo Bolson         |
-    | email                | frodohobbit@lord.com |
-    | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
-    And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
-      | field                     | value                      |
-      | title                     | Searching Neo For Matrix 4 |
-      | remuneration_type         | Remunerado |
-    And I publish the casting call with an expiration date greater than the current date
-    When I try to delete the casting call
-    Then the casting call should not be eliminated from the system
-    And the user should be notified that the casting call cant be deleted cause its published
-
-  Scenario: Unsuccessful Paused Casting Call elimination
-    Given Im logged in on the platform with my account
-    | field                | value                |
-    | fullname             | Frodo Bolson         |
-    | email                | frodohobbit@lord.com |
-    | password             | Frodo123*            |
-    And I have a form template with title "Form for Matrix"
-    And I have a project with name "Matrix 4" and an associated role called "Neo"
+    And I create a form template with title "Form for Matrix" and some form fields
+    And I create a Project called "Matrix 4" with a role called "Neo"
     And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
       | remuneration_type         | Remunerado |
     And I publish the casting call with an expiration date greater than the current date
     When I pause the casting call
-    And I try to delete the casting call
-    Then the casting call should not be eliminated from the system
-    And the user should be notified that the casting call cant be deleted cause its paused
+    And I edit the casting call "Searching Neo For Matrix 4" with the title "Searching Neo For Matrix 5" and its role "Neo" with minimum age requirement "25"
+    Then the casting call should be successfully updated with the title "Searching Neo For Matrix 5" and its role "Neo" should have a minimum age requirement of "25"
+
+  Scenario: Unsuccessful Edition of a Published Casting Call
+    Given Im logged in on the platform with my account
+    | field                | value                |
+    | fullname             | Frodo Bolson         |
+    | email                | frodohobbit@lord.com |
+    | password             | Frodo123*            |
+    And I create a form template with title "Form for Matrix" and some form fields
+    And I create a Project called "Matrix 4" with a role called "Neo"
+    And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
+      | field                     | value                      |
+      | title                     | Searching Neo For Matrix 4 |
+      | remuneration_type         | Remunerado |
+    And I publish the casting call with an expiration date greater than the current date
+    When I edit the casting call "Searching Neo For Matrix 4" with the title "Searching Neo For Matrix 5" and its role "Neo" with minimum age requirement "25"
+    Then the casting call should not be successfully updated with the title "Searching Neo For Matrix 5" and its role "Neo" with minimum age requirement "25"
+    And the user should be notified that the casting must be paused to be updated
+
+  Scenario: Unsuccessful Edition of an ended Casting Call
+    Given Im logged in on the platform with my account
+    | field                | value                |
+    | fullname             | Frodo Bolson         |
+    | email                | frodohobbit@lord.com |
+    | password             | Frodo123*            |
+    And I create a form template with title "Form for Matrix" and some form fields
+    And I create a Project called "Matrix 4" with a role called "Neo"
+    And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
+      | field                     | value                      |
+      | title                     | Searching Neo For Matrix 4 |
+      | remuneration_type         | Remunerado |
+    And I publish the casting call with an expiration date greater than the current date
+    And I finish the casting call
+    When I edit the casting call "Searching Neo For Matrix 4" with the title "Searching Neo For Matrix 5" and its role "Neo" with minimum age requirement "25"
+    Then the casting call should not be successfully updated with the title "Searching Neo For Matrix 5" and its role "Neo" with minimum age requirement "25"
+    And the user should be notified that the casting has finished and cant be edited
