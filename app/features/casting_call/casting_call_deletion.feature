@@ -3,7 +3,7 @@ Feature: Casting Call Deletion
   I want to be able to delete a casting call
   so i prevent mixing them with active casting calls
  
-  Scenario: Successful Casting Call elimination
+  Scenario: Successful Casting Call deletion
     Given Im logged in on the platform with my account
     | field                | value                |
     | fullname             | Frodo Bolson         |
@@ -19,7 +19,7 @@ Feature: Casting Call Deletion
     Then the casting call is deleted from the system
     And the casting call forms should desappear from the system
 
-  Scenario: Successful Finished Casting Call elimination
+  Scenario: Successful Finished Casting Call deletion
     Given Im logged in on the platform with my account
     | field                | value                |
     | fullname             | Frodo Bolson         |
@@ -37,7 +37,7 @@ Feature: Casting Call Deletion
     Then the casting call is deleted from the system
     And the casting call forms should desappear from the system
 
-  Scenario: Unsuccessful Published Casting Call elimination
+  Scenario: Unsuccessful Published Casting Call deletion
     Given Im logged in on the platform with my account
     | field                | value                |
     | fullname             | Frodo Bolson         |
@@ -51,10 +51,10 @@ Feature: Casting Call Deletion
       | remuneration_type         | Remunerado |
     And I publish the casting call with an expiration date greater than the current date
     When I try to delete the casting call
-    Then the casting call is deleted from the system
+    Then the casting call should not be eliminated from the system    
     And the user should be notified that the casting call cant be deleted cause its published
 
-  Scenario: Unsuccessful Paused Casting Call elimination
+  Scenario: Unsuccessful Paused Casting Call deletion
     Given Im logged in on the platform with my account
     | field                | value                |
     | fullname             | Frodo Bolson         |
