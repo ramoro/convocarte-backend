@@ -52,31 +52,6 @@ def step_given_im_logged_in(context):
     finally:
         session = session.close()
 
-@given('I have a form template with title "{template_title}"')
-def step_impl(context, template_title):
-    url = settings.backend_url + "/form-templates/"
-    form_template_field_data = {"title": "Instagram", "type": "text", "order": 0, "is_required": True}
-    form_template_data = {"form_template_title": template_title, "form_template_fields": [form_template_field_data]}
-    
-    headers = {
-        "Authorization": f"Bearer {context.token}"
-    }
-    
-    requests.post(url, json=form_template_data, headers=headers)
-
-@given('I have a project with name "{project_name}" and an associated role called "{role_name}"')
-def step_impl(context, project_name, role_name):
-    url = settings.backend_url + "/projects/"
-    role_data = {"name": role_name}
-    project_data = {"name": project_name, "region": "CABA", "category": "Teatro", "roles": [role_data]}
-    
-    headers = {
-        "Authorization": f"Bearer {context.token}"
-    }
-    response = requests.post(url, json=project_data, headers=headers)
-    context.responsejson = response.json()
-    context.project_id = context.responsejson["id"]
-
 @when('I create a casting call for the project "{project_name}" associating the role "{role_name}" to the form template "{template_title}"')
 def step_when_create_casting_call(context, project_name, role_name, template_title):
     url = settings.backend_url + "/casting-calls/"
@@ -626,7 +601,8 @@ def step_then_casting_deleted(context):
     session = SessionLocal()
     try:
         forms = context.database.query(models.Form).filter(models.Form.casting_call_id == context.casting_call_id).all()
-        assert len(forms) == 0, "Casting call forms were not deleted."
+        for form in forms:
+            assert form.deleted_at is not None, f"Form {form.id} was not properly deleted (deleted_at is None)"
     finally:
         session.close()
 
@@ -653,20 +629,21 @@ def step_then_user_notified_casting_cant_be_deleted_its_paused(context):
 @when('I try to search for {casting_category} castings')
 def step_when_search_for_casting(context, casting_category):
     url = settings.backend_url + "/casting-calls/published"
-    session = SessionLocal()
     search_data = {"date_order": "Ascendente", "categories": [casting_category]}
-    try:
-        headers = {
-            "Authorization": f"Bearer {context.token}"
-        }
-        response = requests.post(url, json=search_data ,headers=headers)
-        context.response = response.json()
-    finally:
-        session.close()
+    headers = {
+        "Authorization": f"Bearer {context.token}"
+    }
+    response = requests.post(url, json=search_data ,headers=headers)
+    context.response = response.json()
 
 @then('the system displays the casting as a result')
 def step_then_system_displays_casting(context):
-    assert any(casting['id'] == context.casting_call_id for casting in context.response) == context.casting_call_id, "Casting was not founded"
+    found = any(casting['id'] == context.casting_call_id for casting in context.response)
+    assert found, (
+        f"Casting with ID {context.casting_call_id} not found in results. "
+        f"Available castings: {[c['id'] for c in context.response]}\n"
+        f"Full response: {context.response}"
+    )
 
 @then('the system does not show any castings as results')
 def step_then_system_does_not_show_results(context):

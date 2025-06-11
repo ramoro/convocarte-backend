@@ -153,7 +153,7 @@ def make_postulation(context):
 
         response = requests.post(url, data=postulation_data, headers=headers)
         context.response = response
-        context.postulation_id = context.response.json()["id"]
+        context.postulation_id = context.response.json().get("id", -1)    
     finally:
         session.close()  
 
@@ -193,8 +193,71 @@ def step_then_user_notified_casting_paused(context):
 
 @then('the user should be notified that the open role for this casting call is full')
 def step_then_user_notified_open_role_is_full(context):
-    assert "role open for this casting call is full" in context.response.text, "Expected error message not found"
+    assert "open role for this casting call is full" in context.response.text, "Expected error message not found"
 
 @then('the user should be notified that they has already postulated for that role')
 def step_then_user_notified_they_has_already_postulated_for_role(context):
     assert "user has already postulated for this role" in context.response.text, "Expected error message not found"
+
+@when('I try to search for my postulations')
+def step_when_search_my_postulations(context):
+    url = settings.backend_url + "/casting-postulations/"
+    headers = {
+        "Authorization": f"Bearer {context.token}"
+    }
+    response = requests.get(url, headers=headers)
+    context.response = response.json()
+
+@then('the system will show me the submitted postulation')
+def step_then_system_show_postulation(context):
+    found = any(postulation['id'] == context.postulation_id for postulation in context.response)
+    assert found, (
+        f"Postulation with ID {context.postulation_id} not found in results. "
+        f"Available postulations: {[c['id'] for c in context.response]}\n"
+        f"Full response: {context.response}"
+    )
+
+@then('the system will not show me the submitted postulation')
+def step_then_system_doesnt_show_postulation(context):
+    assert len(context.response) == 0, "A postulation was found when it shouldn't have been"
+
+@when('I try to delete the postulation')
+def step_when_delete_postulation(context):
+    url = settings.backend_url + "/casting-postulations/{postulation_id}"
+    headers = {
+        "Authorization": f"Bearer {context.token}"
+    }
+    context.response = requests.delete(url.format(postulation_id=context.postulation_id), headers=headers)
+    # Solo parsea a json si tiene contenido, para tomar errores
+    try:
+        context.response_json = context.response.json() if context.response.content else {}
+    except ValueError:
+        context.response_json = {}
+
+@then('the postulation will be deleted from the system')
+def step_then_postulation_deleted(context):
+    session = SessionLocal()
+    try:
+        casting_postulation = session.query(models.CastingPostulation) \
+        .filter(models.CastingPostulation.id == context.postulation_id).first()
+
+        assert casting_postulation.deleted_at is not None, "Casting postulation was not deleted."
+    finally:
+        session.close()
+
+@when('I try to delete a non-existent postulation')
+def step_when_delete_non_existent_postulation(context):
+    url = settings.backend_url + "/casting-postulations/{postulation_id}"
+    headers = {
+        "Authorization": f"Bearer {context.token}"
+    }
+    context.response = requests.delete(url.format(postulation_id=-1), headers=headers)
+    # Solo parsea a json si tiene contenido, para tomar errores
+    try:
+        context.response_json = context.response.json() if context.response.content else {}
+    except ValueError:
+        context.response_json = {}
+
+@then('I should be notified that the postulation doesnt exists so it cant be deleted')
+def step_then_notified_postulation_doesnt_exist_cant_be_deleted(context):
+    assert "not found" in context.response.text, "Expected error message not found."
