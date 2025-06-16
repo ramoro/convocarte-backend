@@ -96,7 +96,7 @@ def step_then_casting_call_created(context, casting_call_title):
     try:
         casting_call = context.database.query(models.CastingCall).filter(models.CastingCall.title == casting_call_title).first()
         assert casting_call is not None, f"Casting call with title {casting_call_title} was not created"
-        assert casting_call.state == "Borrador", f"Casting call was not created as draft"
+        assert casting_call.state == "Borrador", "Casting call was not created as draft"
     finally:
         session.close()
 
@@ -436,6 +436,7 @@ def step_given_user_has_casting_published(context, other_casting_title, role_nam
         #Creamos otro usuario de prueba y lo logeamos para crear lo necesario para publicar un casting
         response = create_and_log_in_account(context, session)
         token = response.json().get('token')
+        context.casting_director_id = response.json().get('id')
 
         #Le creamos un form template
         url = settings.backend_url + "/form-templates/"
@@ -558,8 +559,8 @@ def step_then_casting_not_updated(context, new_casting_title_failed, role_name, 
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
         
         updated_open_role = casting_call.open_roles[0]        
-        assert casting_call.title != new_casting_title_failed, f"Casting call was incorrectly updated."
-        assert updated_open_role.min_age_required != int(min_age_required), f"Casting call role was incorrectly updated."
+        assert casting_call.title != new_casting_title_failed, "Casting call was incorrectly updated."
+        assert updated_open_role.min_age_required != int(min_age_required), "Casting call role was incorrectly updated."
     finally:
         session.close()
 

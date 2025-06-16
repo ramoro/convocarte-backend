@@ -1,4 +1,4 @@
-Feature: Artist Casting Postulation Search
+Feature: Artist Casting Postulation Deletion
     As an artist, 
     I want to remove a postulation from my postulations list
     So that I can avoid confusion with my active postulations
