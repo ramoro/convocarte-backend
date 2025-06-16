@@ -84,7 +84,8 @@ async def create_message(content: str = Form(...),
 
     if not casting_postulation_repository.get_casting_postulation_by_id(postulation_id):
         raise HTTPException(status_code=404, 
-                            detail=f"Postulation with id {postulation_id} not found.")
+                            detail=f"Postulation with id {postulation_id} not found." + 
+                            "Cannot send a message to a non-existent postulation.")
 
     receiver_user = user_repository.get_user_by_id(receiver_id)
     
@@ -106,8 +107,15 @@ async def create_message(content: str = Form(...),
                     "postulation_id": postulation_id,
                     "files": json.dumps(files_names, ensure_ascii=False),
                     "state": "Enviado - Sin Leer"} 
-
+    print("previous message id: ", previous_message_id)
     if previous_message_id:
+        previous_message = message_repository.get_message_by_id(previous_message_id)
+        print(previous_message)
+        if not previous_message:
+            raise HTTPException(status_code=404, 
+                            detail=f"Message with id {previous_message_id} not found." + 
+                            "Cannot respond to a non-existent message")
+                            
         new_message["previous_message_id"] = previous_message_id
     message_created = message_repository.add_new_message(new_message)
 
