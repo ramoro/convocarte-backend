@@ -7,6 +7,7 @@ from sqlalchemy import and_
 import json
 from datetime import datetime, timedelta
 from repository.open_role import OpenRoleRepository
+from casting_call import create_and_log_in_account
 
 @given('there is a project with name "{project_name}" with an associated role called "{role_name}"')
 def step_given_existent_project_with_role(context, project_name, role_name):
@@ -23,10 +24,7 @@ def step_given_existent_project_with_role(context, project_name, role_name):
     url = settings.backend_url + "/projects/"
     role_data = {"name": role_name}
     project_data = {"name": project_name, "region": "CABA", "category": "Teatro", "roles": [role_data]}
-    
-    headers = {
-        "Authorization": f"Bearer {context.token}"
-    }
+
     response = requests.post(url, json=project_data, headers=headers)
     context.project_id = response.json()["id"]
 
@@ -261,3 +259,162 @@ def step_when_delete_non_existent_postulation(context):
 @then('I should be notified that the postulation doesnt exists so it cant be deleted')
 def step_then_notified_postulation_doesnt_exist_cant_be_deleted(context):
     assert "not found" in context.response.text, "Expected error message not found."
+
+
+@given('an artist applied for the role with his account')
+def step_given_other_user_apply_for_role(context):
+    session = SessionLocal()
+    try:
+        #Se crea otro usuario de prueba que se postulara
+        response = create_and_log_in_account(context, session)
+        token = response.json().get('token')
+        context.artist_user_id = response.json().get('id')
+        form = session.query(models.Form).filter(models.Form.role_id == context.role_id).first()
+        data = {row['field']: row['value'] for row in context.table}
+
+        url = settings.backend_url + "/casting-postulations/"
+        casting_postulation_data = {
+        "form_id": form.id,
+        "postulation_data": json.dumps(  # Enviar la data de la postulacion como un array de objetos JSON
+                {"Nombre y Apellido": data["fullname"]}
+            )
+        }
+
+        headers = {
+            "Authorization": f"Bearer {token}"
+        }
+
+        response = requests.post(url, data=casting_postulation_data, headers=headers)
+        context.responsejson = response.json()
+        context.postulation_id = context.responsejson["id"]
+
+
+    finally:
+        session.close()
+
+@when('I try to view the postulation list for roles within the casting')
+def step_when_get_postulation_list_my_casting(context):
+    url = settings.backend_url + "/casting-calls/with-postulations/{casting_call_id}"
+    headers = {
+        "Authorization": f"Bearer {context.token}"
+    }
+    context.response = requests.get(url.format(casting_call_id=context.casting_call_id), headers=headers)
+    context.responsejson = context.response.json()
+
+@then('the system will show me the artists postulation')
+def step_then_show_artist_postulation(context):
+    postulation_ids = []
+
+    # Recorrer open_roles y luego las postulaciones
+    for role in context.responsejson.get('open_roles', []):
+        for postulation in role.get('casting_postulations', []):
+            postulation_ids.append(postulation['id'])
+
+    assert context.postulation_id in postulation_ids, (
+        f"Postulation ID {context.postulation_id} not found in response, insted found {context.responsejson}"
+    )
+
+@then('the system wont show any postulation')
+def step_then_not_show_postulation(context):
+    assert context.responsejson.get('open_roles', []) == [], 'User could get information from other casting'
+
+@then('I will be notify that "{error_message}"')
+def step_then_notifiy_error_message(context, error_message):
+    assert error_message in context.response.text, f"Expected error message not found {context.response.text}"
+
+@when('I try to reject the postulation')
+def step_when_reject_postulation(context):
+    url = settings.backend_url + "/casting-postulations/reject"
+    headers = {
+        "Authorization": f"Bearer {context.token}"
+    }
+    context.response = requests.patch(url, json={"ids": [context.postulation_id]}, headers=headers)
+    # Solo parsea a json si tiene contenido, para tomar errores
+    try:
+        context.response_json = context.response.json() if context.response.content else {}
+    except ValueError:
+        context.response_json = {}
+
+@then('the postulation is rejected')
+def step_then_postulation_rejected(context):
+    session = SessionLocal()
+    try:
+        casting_postulation = session.query(models.CastingPostulation) \
+        .filter(models.CastingPostulation.id == context.postulation_id).first()
+
+        assert casting_postulation.state == "Rechazada", "Casting postulation was not rejected."
+    finally:
+        session.close()
+
+@then('the postulation will be deleted from the casting')
+def step_then_postulation_deleted_from_casting(context):
+    postulation_ids = []
+
+    # Recorrer open_roles y luego las postulaciones
+    for role in context.responsejson.get('open_roles', []):
+        for postulation in role.get('casting_postulations', []):
+            postulation_ids.append(postulation['id'])
+
+    assert context.postulation_id not in postulation_ids, (
+        f"Postulation ID {context.postulation_id} found in response"
+    )
+
+@then('the postulation is not rejected')
+def step_then_postulation_not_rejected(context):
+    session = SessionLocal()
+    try:
+        casting_postulation = session.query(models.CastingPostulation) \
+        .filter(models.CastingPostulation.id == context.postulation_id).first()
+
+        assert casting_postulation.state != "Rechazada", "Casting postulation was rejected when it shouldnt be."
+    finally:
+        session.close()
+
+@when('I try to choose the postulation')
+def step_when_choose_postulation(context):
+    url = settings.backend_url + "/casting-postulations/choose/{postulation_id}"
+    headers = {
+        "Authorization": f"Bearer {context.token}"
+    }
+    context.response = requests.patch(url.format(postulation_id=context.postulation_id), headers=headers)
+    # Solo parsea a json si tiene contenido, para tomar errores
+    try:
+        context.response_json = context.response.json() if context.response.content else {}
+    except ValueError:
+        context.response_json = {}
+
+@then('the postulation is chosen')
+def then_postulation_chosen(context):
+    session = SessionLocal()
+    try:
+        casting_postulation = session.query(models.CastingPostulation) \
+        .filter(models.CastingPostulation.id == context.postulation_id).first()
+
+        assert casting_postulation.state == "Elegida", "Casting postulation was not chosen."
+    finally:
+        session.close()
+
+
+@then('the postulation is not chosen')
+def then_postulation_not_chosen(context):
+    session = SessionLocal()
+    try:
+        casting_postulation = session.query(models.CastingPostulation) \
+        .filter(models.CastingPostulation.id == context.postulation_id).first()
+
+        assert casting_postulation.state != "Elegida", "Casting postulation was incorrectly chosen."
+    finally:
+        session.close()
+
+@given('I reject the postulation')
+def step_given_reject_postulation(context):
+    url = settings.backend_url + "/casting-postulations/reject"
+    headers = {
+        "Authorization": f"Bearer {context.token}"
+    }
+    context.response = requests.patch(url, json={"ids": [context.postulation_id]}, headers=headers)
+    # Solo parsea a json si tiene contenido, para tomar errores
+    try:
+        context.response_json = context.response.json() if context.response.content else {}
+    except ValueError:
+        context.response_json = {}

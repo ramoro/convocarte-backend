@@ -420,6 +420,9 @@ def get_casting_call_with_postulations(casting_call_id: int,
     if not casting_call_info:
         raise HTTPException(status_code=404, detail=f"Casting call with id {casting_call_id} not found.")
     
+    if casting_call_info.owner_id != current_user.id:
+        raise HTTPException(status_code=401, detail="You cannot get other casting calls with postulations")
+
     add_path_to_photo(casting_call_info)
     
     return casting_call_info
