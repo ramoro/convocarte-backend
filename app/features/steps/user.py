@@ -59,9 +59,17 @@ def step_then_project_deleted(context):
 @given('I create a form template with title "{template_title}" and some form fields')
 def step_impl(context, template_title):
     url = settings.backend_url + "/form-templates/"
-    form_template_field_data = {"title": "Instagram", "type": "text", "order": 0, "is_required": True}
-    form_template_data = {"form_template_title": template_title, "form_template_fields": [form_template_field_data]}
+    # Procesar la tabla de campos del formulario
+    form_template_field_data = []
+    for row in context.table:
+        field_data = {field["field"]: field["value"] for field in context.table}
+    form_template_field_data.append(field_data)
     
+    form_template_data = {
+        "form_template_title": template_title,
+        "form_template_fields": form_template_field_data
+    }
+
     headers = {
         "Authorization": f"Bearer {context.token}"
     }

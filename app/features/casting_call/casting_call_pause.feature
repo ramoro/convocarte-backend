@@ -10,6 +10,11 @@ Feature: Casting Call Pause
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
     And I create a form template with title "Form for Matrix" and some form fields
+      | field                     | value             |
+      | title                     | Nombre y Apellido |
+      | type                      | text              |
+      | order                     | 0                 |
+      | is_required               | True              |
     And I create a Project called "Matrix 4" with a role called "Neo"
     And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
@@ -26,6 +31,11 @@ Feature: Casting Call Pause
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
     And I create a form template with title "Form for Matrix" and some form fields
+      | field                     | value             |
+      | title                     | Nombre y Apellido |
+      | type                      | text              |
+      | order                     | 0                 |
+      | is_required               | True              |
     And I create a Project called "Matrix 4" with a role called "Neo"
     And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
@@ -42,6 +52,11 @@ Feature: Casting Call Pause
     | email                | frodohobbit@lord.com |
     | password             | Frodo123*            |
     And I create a form template with title "Form for Matrix" and some form fields
+      | field                     | value             |
+      | title                     | Nombre y Apellido |
+      | type                      | text              |
+      | order                     | 0                 |
+      | is_required               | True              |    
     And I create a Project called "Matrix 4" with a role called "Neo"
     And I create a casting call for the project "Matrix 4" associating the role "Neo" to the form template "Form for Matrix"
       | field                     | value                      |
