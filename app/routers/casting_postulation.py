@@ -249,7 +249,9 @@ def delete_casting_postulation(postulation_id: int, db: Session = Depends(get_db
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.patch("/reject", status_code=status.HTTP_204_NO_CONTENT)
-def reject_postulations(postulation_ids: CastingPostulationIds, db: Session = Depends(get_db)):
+def reject_postulations(postulation_ids: CastingPostulationIds, 
+                        current_user: models.User = Depends(oauth2.get_current_user),
+                        db: Session = Depends(get_db)):
 
     casting_postulation_repository = CastingPostulationRepository(db)
 
@@ -258,13 +260,18 @@ def reject_postulations(postulation_ids: CastingPostulationIds, db: Session = De
 
         if not casting_postulation:
             raise HTTPException(status_code=404, detail=f"Casting postulation with id {postulation_id} not found.")
+        
+        if casting_postulation.casting_call.owner_id != current_user.id:
+            raise HTTPException(status_code=401, detail="Cannot reject postulations from a casting that is not yours")
     
     casting_postulation_repository.update_casting_postulations_state(postulation_ids.ids, "Rechazada")
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.patch("/choose/{postulation_id}", status_code=status.HTTP_204_NO_CONTENT)
-def choose_postulation(postulation_id: int, db: Session = Depends(get_db)):
+def choose_postulation(postulation_id: int, 
+                        current_user: models.User = Depends(oauth2.get_current_user),
+                        db: Session = Depends(get_db)):
 
     casting_postulation_repository = CastingPostulationRepository(db)
     
@@ -274,12 +281,18 @@ def choose_postulation(postulation_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, 
                             detail=f"Casting postulation with id {postulation_id} not found.")
     
+    if chosen_casting_postulation.casting_call.owner_id != current_user.id:
+        raise HTTPException(status_code=401, 
+                            detail="Cannot choice postulation to fill the role in a casting you did not create")
+
     if "Eliminada" in chosen_casting_postulation.state:
         raise HTTPException(status_code=400, 
                     detail="The Casting postulation cant be chosen because it has been deleted.")
     
-    casting_postulation_repository.choose_casting_postulation(postulation_id)
-
+    if "Rechazada" in chosen_casting_postulation.state:
+        raise HTTPException(status_code=400, 
+                    detail="Cannot choice a rejected postulation to fill the role")
+    
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @router.patch("/remove-choice/{postulation_id}", status_code=status.HTTP_204_NO_CONTENT)
