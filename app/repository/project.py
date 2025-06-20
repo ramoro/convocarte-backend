@@ -131,3 +131,16 @@ class ProjectRepository:
             self.db.rollback()  # Rollbackea si algo falla
             print(f"Error occurred: {e}") 
             return None
+
+    def update_project_state(self, project):
+        """Recibe una entidad projecto, revisa si tiene algun casting publicado y en ese
+        caso se setea como que esta siendo usado. Caso contrario is_used se pasa a false."""
+        is_used = False
+        for casting_call in project.casting_calls:
+            if casting_call.state == "Publicado":
+                is_used = True
+        project.is_used = is_used
+        print(project.is_used)
+
+        self.db.commit()
+        return

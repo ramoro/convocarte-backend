@@ -1,6 +1,9 @@
 from database import get_db
 import logging
-from datetime import date
+from repository.project import ProjectRepository
+from repository.casting_call import CastingCallRepository
+from repository.user import UserRepository
+
 
 ##Para programar tareas
 logging.basicConfig(
@@ -17,30 +20,32 @@ import models
 
 async def clean_old_unverified_users():
     async with get_db_context() as db:
+        
         cutoff_time = datetime.utcnow() - timedelta(hours=24)
-    
-        users_to_delete = db.query(models.User).filter(
-            models.User.is_verified == False,
-            models.User.created_at < cutoff_time
-        ).all()
-        
-        for user in users_to_delete:
-            db.delete(user)
-        
-        db.commit()
-        logger.info(f"Deleted {len(users_to_delete)} unverified users created before {cutoff_time}")
+
+        user_repository = UserRepository(db)
+
+        deleted_users = user_repository.delete_unverified_users_cutoff_time_expired(cutoff_time)
+
+        logger.info(f"Deleted {len(deleted_users)} unverified users created before {cutoff_time}")
 
 async def change_state_expired_casting_calls():
     async with get_db_context() as db:
-        today = date.today()
 
-        updated_castings = db.query(models.CastingCall)\
-        .filter(models.CastingCall.expiration_date <= today)\
-        .filter(models.CastingCall.state != "Vencido")\
-        .update({models.CastingCall.state: "Vencido"}, synchronize_session=False)
+        casting_call_repository = CastingCallRepository(db)
 
-        db.commit()
-        logger.info(f"Updated {updated_castings} as expired")
+        expired_castings = casting_call_repository.update_expired_casting_calls()
+        
+        project_repository = ProjectRepository(db)
+
+        #Actualiza uso del proyecto si corresponde, de estar publicado a sin usar
+        for casting in expired_castings:
+            logger.info(f"estado {casting.state}")
+            project_repository.update_project_state(casting.project)
+            logger.info(f"estado projecto {casting.project.is_used}")
+
+
+        logger.info(f"Updated {len(expired_castings)} as expired")
 
 
 # Context manager para usar get_db() de forma async

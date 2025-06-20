@@ -70,3 +70,13 @@ class UserRepository:
 
         self.db.commit()
 
+    def delete_unverified_users_cutoff_time_expired(self, cutoff_time):
+        users_to_delete = self.db.query(models.User).filter(
+            models.User.is_verified == False,
+            models.User.created_at < cutoff_time
+        ).all()
+        
+        for user in users_to_delete:
+            self.db.delete(user)
+        
+        self.db.commit()

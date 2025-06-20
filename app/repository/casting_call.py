@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 import models
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_
+from datetime import date
 
 class CastingCallRepository:
 
@@ -53,9 +54,6 @@ class CastingCallRepository:
                     role['occupied_spots'] = 0
                 new_role = models.OpenRole(**role)
                 self.db.add(new_role)
-
-            #Se actualiza el proyecto asociado con su nuevo estado
-            associated_project.is_used = True
 
             self.db.commit()
             self.db.refresh(new_casting_call) 
@@ -341,3 +339,16 @@ class CastingCallRepository:
                     postulation.has_unread_messages = unread_count > 0
     
         return casting_call
+
+    def update_expired_casting_calls(self):
+        today = date.today()
+
+        expired_castings_query = self.db.query(models.CastingCall)\
+        .filter(models.CastingCall.expiration_date <= today)\
+        .filter(models.CastingCall.state != "Vencido")
+        expired_castings = expired_castings_query.all()
+        expired_castings_query.update({models.CastingCall.state: "Vencido"}, synchronize_session=False)
+
+        self.db.commit()
+
+        return expired_castings

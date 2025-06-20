@@ -228,6 +228,10 @@ def publish_casting_call(casting_id: int, casting_call: CastingCallPublication,
         raise HTTPException(status_code=404, 
                             detail=f"Casting call with id {casting_id} not found.")
 
+    project_repository = ProjectRepository(db)
+
+    project_repository.update_project_state(updated_casting_call.project)
+
     return updated_casting_call
 
 @router.patch("/pause/{casting_id}")
@@ -253,6 +257,10 @@ def stop_casting_call(casting_id: int, casting_call: CastingCallChangeState,
     if not updated_casting_call:
         raise HTTPException(status_code=404, 
                             detail=f"Casting call with id {casting_id} not found.")
+
+    project_repository = ProjectRepository(db)
+
+    project_repository.update_project_state(updated_casting_call.project)
 
     return updated_casting_call
 
@@ -280,6 +288,11 @@ def finish_casting_call(casting_id: int, casting_call: CastingCallChangeState,
         else:
             raise HTTPException(status_code=500, 
                                 detail="Internal Server Error")
+
+    
+    project_repository = ProjectRepository(db)
+
+    project_repository.update_project_state(updated_casting_call.project)
 
     return updated_casting_call
 
