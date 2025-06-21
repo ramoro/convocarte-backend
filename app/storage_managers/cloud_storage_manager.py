@@ -1,7 +1,6 @@
 
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaInMemoryUpload
-from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from utils import resize_image
 import secrets
