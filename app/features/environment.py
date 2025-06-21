@@ -25,7 +25,32 @@ def after_all(context):
 def before_scenario(context, scenario):
     """Configuración antes de cada escenario."""
     context.database = SessionLocal()
-
+    
+# def after_scenario(context, scenario):
+#     """Limpieza después de cada escenario."""
+#     session = context.database
+#     try:
+#         # Deshabilitar restricciones de clave foránea temporalmente
+#         session.execute("SET session_replication_role = 'replica';")
+        
+#         # Borrar registros de las tablas en orden correcto
+#         tables = [
+#             "exposed_roles", "form_fields", "forms",
+#             "form_template_fields", "form_templates", "roles",
+#             "casting_calls", "projects"
+#         ]
+        
+#         for table in tables:
+#             session.execute(f"DELETE FROM {table};")
+        
+#         # Restaurar restricciones
+#         session.execute("SET session_replication_role = 'origin';")
+#         session.commit()
+#     except Exception as e:
+#         session.rollback()
+#         raise e
+#     finally:
+#         session.close()
 def after_scenario(context, scenario):
     """Limpieza después de cada escenario usando DELETE."""
     session = context.database
