@@ -143,6 +143,7 @@ def get_postulation_messages(postulation_id: int,
 
     postulation_messages = message_repository.get_messages_by_postulation_id(postulation_id)
 
+
     #Transformo resultado de tuplas a lista de diccionaris, y agrego path completo a
     #la foto de perfil del emisor
     postulation_messages = [
@@ -157,7 +158,7 @@ def get_postulation_messages(postulation_id: int,
                 "created_at": msg.created_at,
                 "previous_message_id": msg.previous_message_id,
                 "sender_fullname": fullname,
-                "sender_profile_picture": get_complete_url_for_profile_picture(profile_picture)
+                "sender_profile_picture": get_complete_url_for_profile_picture(profile_picture) if profile_picture else None
             }
             for msg, fullname, profile_picture in postulation_messages
         ]
