@@ -17,6 +17,7 @@ from schemas.casting_call import  (
 from repository.casting_call import CastingCallRepository
 from repository.project import ProjectRepository
 from repository.role import RoleRepository
+from repository.open_role import OpenRoleRepository
 from repository.form_template import FormTemplateRepository
 from fastapi import File, UploadFile
 from config import settings
@@ -102,6 +103,7 @@ async def create_casting_call(title: str = Form(...),
     casting_call_repository = CastingCallRepository(db)
     project_repository = ProjectRepository(db)
     role_repository = RoleRepository(db)
+    open_role_repository = OpenRoleRepository(db)
     form_template_repository = FormTemplateRepository(db)
 
     if not casting_call_photos: casting_call_photos = []
@@ -131,6 +133,11 @@ async def create_casting_call(title: str = Form(...),
         if not role_repository.get_role_by_id(role["role_id"]):
             raise HTTPException(status_code=404, 
                                 detail=f"Role with id {role['role_id']} not found.")
+        
+        if open_role_repository.get_open_role_by_role_id(role["role_id"]):
+            raise HTTPException(status_code=400, 
+                                detail=f"Role with id {role['role_id']} is already published on another casting.")
+        
         form_template = form_template_repository.get_form_template_by_id(role["form_template_id"])
 
         if not form_template:

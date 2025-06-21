@@ -35,3 +35,11 @@ class OpenRoleRepository:
         self.db.query(models.OpenRole).filter(models.OpenRole.id == open_role_id).\
         update({'occupied_spots': occupied_spots})
         self.db.commit()
+
+    def get_open_role_by_role_id(self, role_id):
+        result = self.db.query(models.OpenRole).filter(models.OpenRole.role_id == role_id).first()
+
+        if result:
+            return result
+
+        return None
