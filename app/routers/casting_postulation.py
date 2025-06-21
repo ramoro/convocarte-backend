@@ -292,6 +292,8 @@ def choose_postulation(postulation_id: int,
     if "Rechazada" in chosen_casting_postulation.state:
         raise HTTPException(status_code=400, 
                     detail="Cannot choice a rejected postulation to fill the role")
+
+    casting_postulation_repository.choose_casting_postulation(postulation_id)      
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

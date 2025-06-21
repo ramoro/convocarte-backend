@@ -5,7 +5,7 @@ from starlette import status
 from sqlalchemy.orm import Session
 import oauth2
 import models
-from schemas.project import CreateProject, ProjectResponse, ProjectWithRolesResponse, UpdateProject
+from schemas.project import CreateProject, ProjectResponse, ProjectWithRolesAndCastingsResponse, UpdateProject
 from repository.project import ProjectRepository
 
 router = APIRouter(
@@ -70,7 +70,7 @@ def get_user_projects(current_user: models.User = Depends(oauth2.get_current_use
 
     return my_projects
 
-@router.get("/with-roles", response_model=List[ProjectWithRolesResponse])
+@router.get("/with-roles", response_model=List[ProjectWithRolesAndCastingsResponse])
 def get_user_projects_with_roles(current_user: models.User = Depends(oauth2.get_current_user), 
                         db: Session = Depends(get_db)):
     
@@ -147,13 +147,13 @@ def update_project(project_id: int, updated_project: UpdateProject,
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-@router.get("/{project_id}", response_model=ProjectWithRolesResponse)
+@router.get("/{project_id}", response_model=ProjectWithRolesAndCastingsResponse)
 def get_project(project_id: int,
                 db: Session = Depends(get_db)):
     
     project_repository = ProjectRepository(db)
 
-    project = project_repository.get_project_by_id(project_id)
+    project = project_repository.get_project_with_roles_and_castings_by_id(project_id)
 
     if not project:
         raise HTTPException(status_code=404, 
