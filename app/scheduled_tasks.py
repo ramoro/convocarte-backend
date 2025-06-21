@@ -26,6 +26,8 @@ async def clean_old_unverified_users():
         user_repository = UserRepository(db)
 
         deleted_users = user_repository.delete_unverified_users_cutoff_time_expired(cutoff_time)
+        if not deleted_users:
+            deleted_users = []
 
         logger.info(f"Deleted {len(deleted_users)} unverified users created before {cutoff_time}")
 
@@ -35,6 +37,9 @@ async def change_state_expired_casting_calls():
         casting_call_repository = CastingCallRepository(db)
 
         expired_castings = casting_call_repository.update_expired_casting_calls()
+
+        if not expired_castings:
+            expired_castings = []
         
         project_repository = ProjectRepository(db)
 
