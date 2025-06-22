@@ -35,6 +35,7 @@ class UserResponse(BaseModel):
 class UserFullResponse(UserResponse):
     cv: Optional[str]
     reel_link: Optional[str]
+    profile_picture: Optional[str]
 
     chest_up_shot: Optional[str]
     full_body_shot: Optional[str]

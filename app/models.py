@@ -15,14 +15,28 @@ class User(Base):
     is_verified = Column(Boolean, nullable=False, server_default=text('false'))
     created_at = Column(TIMESTAMP(timezone=True),
                       nullable=False, server_default=text('now()'))
+    deleted_at = Column(TIMESTAMP(timezone=True), index=True)
+
     
     #Al eliminarlo tmbien se eliminan los form_templates, proyectos y castings asociados                
     form_templates = relationship("FormTemplate", back_populates="owner", cascade="all, delete")
     projects = relationship("Project", back_populates="owner", cascade="all, delete-orphan")
     casting_calls = relationship("CastingCall", back_populates="owner", cascade="all, delete")
-
-
-
+    casting_postulations = relationship("CastingPostulation", back_populates="owner", cascade="all, delete")
+    sent_messages = relationship(
+        "Message", 
+        foreign_keys="Message.sender_id", 
+        back_populates="sender", 
+        cascade="all, delete"
+    )
+    # Mensajes recibidos (como destinatario)
+    received_messages = relationship(
+        "Message", 
+        foreign_keys="Message.receiver_id", 
+        back_populates="receiver", 
+        cascade="all, delete"
+    )
+    
     profile_picture = Column(String)
     cv = Column(String)
     reel_link = Column(String)
@@ -187,14 +201,26 @@ class CastingCall(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     deleted_at = Column(TIMESTAMP(timezone=True), index=True)
 
+    #Template de rechazo para los castings
+    #Este template se usa para enviar un mensaje de rechazo a los usuarios que se postulan a un casting
+    rejection_template = Column(String, default='''Hola /NombreUsuario/, espero te encuentres bien.
+    Queríamos agradecerte por participar en el casting y por el tiempo brindado. Valoramos mucho tu trabajo, pero en esta ocasión decidimos avanzar con otra propuesta. De todos modos, esperamos poder contar con vos en futuros proyectos.
+    ¡Muchas gracias nuevamente!''',
+    server_default=text("'Hola /NombreUsuario/, espero te encuentres bien.\n '" + 
+                        "'Queríamos agradecerte por participar en el casting y por el tiempo brindado.'" +
+                        "'Valoramos mucho tu trabajo, pero en esta ocasión decidimos avanzar con otra propuesta.\n\n'"
+                        "'De todos modos, esperamos poder contar con vos en futuros proyectos.\n¡Muchas gracias nuevamente!'")
+    )
+
     # Relación inversa con Project
     project = relationship("Project", back_populates="casting_calls")  
-
     # Relación inversa con OpenRole
     open_roles = relationship("OpenRole", back_populates="casting_call")
-
     # Relación inversa con CastingPostulation
     casting_postulations = relationship("CastingPostulation", back_populates="casting_call")
+    # Relación inversa con Forms
+    forms = relationship("Form", back_populates="casting_call", cascade="all, delete-orphan") 
+
 
 class Form(Base):
     __tablename__ = "forms"
@@ -207,9 +233,12 @@ class Form(Base):
     deleted_at = Column(TIMESTAMP(timezone=True), index=True)
 
     # Define la relación con FormField
-    form_fields = relationship("FormField", back_populates="form")
+    form_fields = relationship("FormField", back_populates="form", cascade="all, delete-orphan")
     # Relación inversa con OpenRole
     open_roles = relationship("OpenRole", back_populates="form")
+    # Relación inversa con Form
+    casting_call = relationship("CastingCall", back_populates="forms")  
+
 
 class FormField(Base):
     __tablename__ = "form_fields"
@@ -243,15 +272,21 @@ class OpenRole(Base):
     spots_amount = Column(Integer)
     occupied_spots = Column(Integer)
 
+    deleted_at = Column(TIMESTAMP(timezone=True))
+
+
     casting_call = relationship("CastingCall", back_populates="open_roles")  # Relación con CastingCall
     role = relationship("Role", back_populates="open_roles")  # Relación con Role
     form = relationship("Form", back_populates="open_roles")  # Relación con Form
+    
     casting_postulations = relationship("CastingPostulation", back_populates="open_role")
 
+    
 class CastingPostulation(Base):
     __tablename__ = "casting_postulations"
     id = Column(Integer, primary_key=True, nullable=False)
     owner_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
+    owner = relationship("User", back_populates="casting_postulations")
     casting_call_id = Column(Integer, ForeignKey('casting_calls.id', ondelete="CASCADE"), nullable=False, index=True)
     open_role_id = Column(Integer, ForeignKey('open_roles.id', ondelete="CASCADE"), nullable=False, index=True)
     state = Column(String, nullable=False)
@@ -262,13 +297,49 @@ class CastingPostulation(Base):
     # Relaciones
     casting_call = relationship("CastingCall", back_populates="casting_postulations")
     open_role = relationship("OpenRole", back_populates="casting_postulations")
+    
+    # Relación inversa con Message
+    messages = relationship("Message", back_populates="casting_postulation")
 
     # Métodos para el manejo de postulation_data que se almacenara como JSON en la bdd
     def set_postulation_data(self, data):
         """Convierte un dict en JSON string antes de almacenarlo."""
         self.postulation_data = json.dumps(data)
-    
+
     def get_postulation_data(self):
         """Convierte un JSON string de vuelta a dict."""
         return json.loads(self.postulation_data) if self.postulation_data else None
+
+class Message(Base):
+    __tablename__ = "messages"
+    id = Column(Integer, primary_key=True, nullable=False)
+    content = Column(String, nullable=False)
+    files = Column(String)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
+    state = Column(String, nullable=False, index=True)
+
+    # Relación con el mensaje anterior (puede ser NULL si es el primer mensaje)
+    previous_message_id = Column(Integer, ForeignKey('messages.id', ondelete="SET NULL"))
+    sender_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
+    receiver_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
+    postulation_id = Column(Integer, ForeignKey('casting_postulations.id', ondelete="CASCADE"), nullable=False, index=True)
+
+    # Relación con el mensaje anterior (auto-relación)
+    previous_message = relationship(
+        "Message", 
+        remote_side=[id],  # Indica que esta es la parte "remota" de la relación
+        back_populates="replies",  # Nombre de la relación inversa
+        foreign_keys=[previous_message_id]
+    )
+
+    # Mensajes que son respuestas a este (relación inversa)
+    replies = relationship(
+        "Message",
+        back_populates="previous_message",
+        cascade="all, delete-orphan"  # Opcional: borra respuestas si se elimina este mensaje
+    )
+
+    sender = relationship("User", foreign_keys=[sender_id], back_populates="sent_messages")
+    receiver = relationship("User", foreign_keys=[receiver_id], back_populates="received_messages")
+    casting_postulation = relationship("CastingPostulation", back_populates="messages")
     
