@@ -11,11 +11,13 @@ from schemas.casting_call import  (
     PublishedCastingCallResponse, 
     CastingCallChangeState, 
     CastingCallResponse,
-    CastingCallFilter
+    CastingCallFilter,
+    CastingCallChangeRejectionTemplate
 )
 from repository.casting_call import CastingCallRepository
 from repository.project import ProjectRepository
 from repository.role import RoleRepository
+from repository.open_role import OpenRoleRepository
 from repository.form_template import FormTemplateRepository
 from fastapi import File, UploadFile
 from config import settings
@@ -101,6 +103,7 @@ async def create_casting_call(title: str = Form(...),
     casting_call_repository = CastingCallRepository(db)
     project_repository = ProjectRepository(db)
     role_repository = RoleRepository(db)
+    open_role_repository = OpenRoleRepository(db)
     form_template_repository = FormTemplateRepository(db)
 
     if not casting_call_photos: casting_call_photos = []
@@ -130,6 +133,11 @@ async def create_casting_call(title: str = Form(...),
         if not role_repository.get_role_by_id(role["role_id"]):
             raise HTTPException(status_code=404, 
                                 detail=f"Role with id {role['role_id']} not found.")
+        
+        if open_role_repository.get_open_role_by_role_id(role["role_id"]):
+            raise HTTPException(status_code=400, 
+                                detail=f"Role with id {role['role_id']} is already published on another casting.")
+        
         form_template = form_template_repository.get_form_template_by_id(role["form_template_id"])
 
         if not form_template:
@@ -155,7 +163,8 @@ async def create_casting_call(title: str = Form(...),
                         "state": "Borrador"} #Arranca en estado Borrador hasta que se publique
     
     # Se le manda los datos del casting recibidos sumado al id del usuario que lo creo 
-    # y por otro lado la lista de roles que casteara el casting
+    # y por otro lado la lista de roles que abrira el casting
+    # TODO: Si falla creacion casting hay q eliminar fotos creadas
     casting_call_created = casting_call_repository.add_new_casting_call(new_casting_call, 
                                                                         roles_list, associated_project)
     if not casting_call_created:
@@ -226,6 +235,10 @@ def publish_casting_call(casting_id: int, casting_call: CastingCallPublication,
         raise HTTPException(status_code=404, 
                             detail=f"Casting call with id {casting_id} not found.")
 
+    project_repository = ProjectRepository(db)
+
+    project_repository.update_project_state(updated_casting_call.project)
+
     return updated_casting_call
 
 @router.patch("/pause/{casting_id}")
@@ -251,6 +264,10 @@ def stop_casting_call(casting_id: int, casting_call: CastingCallChangeState,
     if not updated_casting_call:
         raise HTTPException(status_code=404, 
                             detail=f"Casting call with id {casting_id} not found.")
+
+    project_repository = ProjectRepository(db)
+
+    project_repository.update_project_state(updated_casting_call.project)
 
     return updated_casting_call
 
@@ -278,6 +295,11 @@ def finish_casting_call(casting_id: int, casting_call: CastingCallChangeState,
         else:
             raise HTTPException(status_code=500, 
                                 detail="Internal Server Error")
+
+    
+    project_repository = ProjectRepository(db)
+
+    project_repository.update_project_state(updated_casting_call.project)
 
     return updated_casting_call
 
@@ -405,3 +427,39 @@ def delete_casting_call(casting_call_id: int, db: Session = Depends(get_db)):
                             detail="An error occurred while deleting the casting call") 
     
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.get("/with-postulations/{casting_call_id}")
+def get_casting_call_with_postulations(casting_call_id: int,
+    current_user: models.User = Depends(oauth2.get_current_user), 
+    db: Session = Depends(get_db)) -> CastingCallResponse:
+
+    casting_call_repository = CastingCallRepository(db)
+    casting_call_info = casting_call_repository.get_casting_call_by_id_with_postulations(casting_call_id, 
+                                                                                    current_user.id)
+
+    if not casting_call_info:
+        raise HTTPException(status_code=404, detail=f"Casting call with id {casting_call_id} not found.")
+    
+    if casting_call_info.owner_id != current_user.id:
+        raise HTTPException(status_code=401, detail="You cannot get other casting calls with postulations")
+
+    add_path_to_photo(casting_call_info)
+    
+    return casting_call_info
+
+@router.patch("/rejection-template/{casting_call_id}")
+def update_casting_call_rejection_template(casting_call_id: int, 
+                                           casting_call: CastingCallChangeRejectionTemplate,
+                                           db: Session = Depends(get_db)):
+
+    casting_call_repository = CastingCallRepository(db)
+
+    updated_casting_call = casting_call_repository.update_casting_call(casting_call_id, 
+                                                                        casting_call.model_dump())
+    
+    if not updated_casting_call:
+        raise HTTPException(status_code=404, 
+                            detail=f"Casting call with id {casting_call_id} not found.")
+
+
+    

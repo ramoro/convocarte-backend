@@ -6,6 +6,15 @@ import pytz
 from dateutil import parser
 from schemas.project import ProjectResponse
 
+class CastingCallPostulation(BaseModel):
+    id: int
+    owner_id: int
+    state: str
+    created_at: datetime
+    postulation_data: str
+    open_role_id: int
+    has_unread_messages: Optional[bool] = None
+    unread_messages_count: Optional[int] = None
 
 class CastingCallOpenRoleInfo(BaseModel):
     role_id: int
@@ -19,6 +28,7 @@ class CastingCallOpenRoleInfo(BaseModel):
     spots_amount: Optional[int] = None
     occupied_spots: Optional[int] = None
     disabled: bool
+    casting_postulations: Optional[List[CastingCallPostulation]] = None
 
 #class CastingCallRoleCreation(CastingCallRole):
 #    form_template_id: int #Para la creacion se usa form_template_id, luego al crearse el casting ya se crea un form para el rol dentro del casting
@@ -43,9 +53,12 @@ class CastingCallPreviewResponse(BaseModel):
     remuneration_type: str
     state: str
     casting_photos: Optional[List[str]] = None
+    description: Optional[str] = None
     created_at: datetime
     publication_date: Optional[date]
     project: Optional[ProjectResponse] = None
+    owner_id: int
+    rejection_template: Optional[str] = None
 
 class PublishedCastingCallResponse(BaseModel):
     title: str
@@ -112,6 +125,7 @@ class CastingCallResponse(CastingCallPreviewResponse):
     expiration_date: Optional[date] = None
     project: CastingCallProject
     open_roles: List[CastingCallOpenRole]
+    rejection_template: Optional[str] = None
 
 class CastingCallFilter(BaseModel):
     date_order: str
@@ -120,3 +134,6 @@ class CastingCallFilter(BaseModel):
     age: Optional[int] = None
     height: Optional[float] = None
     hair_colors: Optional[List[str]] = None
+
+class CastingCallChangeRejectionTemplate(BaseModel):
+    rejection_template: str

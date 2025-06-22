@@ -1,7 +1,9 @@
+from datetime import datetime, timezone
 import models
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_
-from datetime import datetime, timezone
+from datetime import date
+
 class CastingCallRepository:
 
     def __init__(self, db: Session):
@@ -53,9 +55,6 @@ class CastingCallRepository:
                 new_role = models.OpenRole(**role)
                 self.db.add(new_role)
 
-            #Se actualiza el proyecto asociado con su nuevo estado
-            associated_project.is_used = True
-
             self.db.commit()
             self.db.refresh(new_casting_call) 
         except Exception as e:
@@ -67,7 +66,8 @@ class CastingCallRepository:
     
     def get_casting_calls_by_user_id(self, user_id):
         return self.db.query(models.CastingCall).\
-            filter((models.CastingCall.owner_id == user_id)).all()
+            filter(and_(models.CastingCall.owner_id == user_id,
+                        models.CastingCall.deleted_at == None)).all()
     
     def update_casting_call(self, casting_call_id, updated_casting_call):
         casting_call_query = self.db.query(models.CastingCall).\
@@ -284,9 +284,11 @@ class CastingCallRepository:
                 # forms generados
                 for open_role in casting_call.open_roles:
                     if open_role.form:
-                        self.db.delete(open_role.form)
-
-                    self.db.delete(open_role)
+                        open_role.form.deleted_at = datetime.now(timezone.utc)
+                        self.db.add(open_role.form)
+                    
+                    open_role.deleted_at = datetime.now(timezone.utc)
+                    self.db.add(open_role)
                 # Marco el CastingCall como eliminado con la fecha
                 # pero no lo borro de la bdd para tenerlo como historial
                 casting_call.deleted_at = datetime.now(timezone.utc)
@@ -301,3 +303,52 @@ class CastingCallRepository:
             print(e)
             self.db.rollback()
             return False
+        
+    def get_casting_call_by_id_with_postulations(self, casting_call_id, current_user_id):
+        """Recibe el id de un casting y el id del usuario que solicitó la información, y devuelve toda
+        la data del casting (roles asociados, forms, proyecto), pero ademas devuelve el listado de postulaciones
+        hechas para ese casting con la información de si tienen mensajes sin leer, y cuantos."""
+        casting_call = (
+            self.db.query(models.CastingCall)
+            .filter(models.CastingCall.id == casting_call_id)
+            .options(
+                joinedload(models.CastingCall.project),
+                joinedload(models.CastingCall.open_roles)
+                .joinedload(models.OpenRole.role),  # Cargar el role de cada open role
+                joinedload(models.CastingCall.open_roles)
+                .joinedload(models.OpenRole.form),   # Cargar el form de cada open role
+                joinedload(models.CastingCall.open_roles)
+                .joinedload(models.OpenRole.casting_postulations) # Cargar postulaciones de cada open role
+                .joinedload(models.CastingPostulation.messages) #Cargar mensajes de cada postulacion para saber si hay mensajes sin leer
+            )  
+            .first()
+        )
+
+        if casting_call:
+            # Procesar cada postulación para agregar info de mensajes no leídos
+            for open_role in casting_call.open_roles:
+                for postulation in open_role.casting_postulations:
+                    # Contar mensajes no leídos donde el emisor no es el usuario actual
+                    unread_count = sum(
+                        1 for message in postulation.messages 
+                        if "Sin Leer" in message.state 
+                        and message.sender_id != current_user_id
+                    )
+
+                    postulation.unread_messages_count = unread_count
+                    postulation.has_unread_messages = unread_count > 0
+    
+        return casting_call
+
+    def update_expired_casting_calls(self):
+        today = date.today()
+
+        expired_castings_query = self.db.query(models.CastingCall)\
+        .filter(models.CastingCall.expiration_date <= today)\
+        .filter(models.CastingCall.state != "Vencido")
+        expired_castings = expired_castings_query.all()
+        expired_castings_query.update({models.CastingCall.state: "Vencido"}, synchronize_session=False)
+
+        self.db.commit()
+
+        return expired_castings
