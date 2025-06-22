@@ -19,13 +19,13 @@ class CastingPostulationRepository:
 
         return new_casting_postulation
     
-    def get_casting_postulation_by_user_and_exposed_role(self, user_id, exposed_role_id):
+    def get_casting_postulation_by_user_and_open_role(self, user_id, open_role_id):
         """Recibe el id de un usuario y el id de un rol expuesto. Devuelve la postulacion del usuario
         a ese rol expuesto en caso de existir, sino devuelve None."""
         return self.db.query(models.CastingPostulation).filter(
             and_(
                 models.CastingPostulation.owner_id == user_id,
-                models.CastingPostulation.exposed_role_id == exposed_role_id
+                models.CastingPostulation.open_role_id == open_role_id
             )).first()
     
     def get_casting_postulation_by_id(self, casting_postulation_id):
@@ -36,8 +36,8 @@ class CastingPostulationRepository:
             .filter(models.CastingPostulation.id == casting_postulation_id)
             .options(
                 joinedload(models.CastingPostulation.casting_call),
-                joinedload(models.CastingPostulation.exposed_role)
-                .joinedload(models.ExposedRole.role)
+                joinedload(models.CastingPostulation.open_role)
+                .joinedload(models.OpenRole.role)
             )  
             .first()
         )

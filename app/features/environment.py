@@ -35,7 +35,7 @@ def before_scenario(context, scenario):
         
 #         # Borrar registros de las tablas en orden correcto
 #         tables = [
-#             "exposed_roles", "form_fields", "forms",
+#             "open_roles", "form_fields", "forms",
 #             "form_template_fields", "form_templates", "roles",
 #             "casting_calls", "projects"
 #         ]
@@ -56,7 +56,7 @@ def after_scenario(context, scenario):
     session = context.database
     try:
         # Borrar registros de las tablas en orden correcto
-        session.execute("DELETE FROM exposed_roles;")
+        session.execute("DELETE FROM open_roles;")
         session.execute("DELETE FROM form_fields;")
         session.execute("DELETE FROM forms;")
         session.execute("DELETE FROM form_template_fields;")

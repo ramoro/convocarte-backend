@@ -26,7 +26,7 @@ def step_impl(context, project_name):
 def step_impl(context, project_name):
     session = SessionLocal()
     try:
-        project = context.database.query(models.Project).filter(and_(
+        project = session.query(models.Project).filter(and_(
                 models.Project.name == project_name,
                 models.Project.owner_id == context.user_id
             )).first()
@@ -111,7 +111,7 @@ def step_impl(context):
 def step_impl(context):
     session = SessionLocal()
     try:
-        project = context.database.query(models.Project).filter(models.Project.id == context.project_id).first()
+        project = session.query(models.Project).filter(models.Project.id == context.project_id).first()
         assert project.deleted_at is not None, f"Project was not deleted"
     finally:
         session.close()
@@ -120,7 +120,7 @@ def step_impl(context):
 def step_impl(context):
     session = SessionLocal()
     try:
-        castings = context.database.query(models.CastingCall).filter(models.CastingCall.project_id == context.project_id).all()
+        castings = session.query(models.CastingCall).filter(models.CastingCall.project_id == context.project_id).all()
         assert castings[0].deleted_at is not None, f"Casting calls were not deleted"
     finally:
         session.close()
@@ -129,7 +129,7 @@ def step_impl(context):
 def step_impl(context):
     session = SessionLocal()
     try:
-        project = context.database.query(models.Project).filter(models.Project.id == context.project_id).first()
+        project = session.query(models.Project).filter(models.Project.id == context.project_id).first()
         assert project.deleted_at is None, f"Project was deleted"
     finally:
         session.close()
@@ -162,7 +162,7 @@ def step_impl(context):
 def step_impl(context):
     session = SessionLocal()
     try:
-        project = context.database.query(models.Project).filter(models.Project.id == context.project_id).first()
+        project = session.query(models.Project).filter(models.Project.id == context.project_id).first()
         updated = (project.name == context.new_project_name and project.description == context.new_project_description \
                     and project.roles and project.roles[0].name == context.new_role_name)
         assert updated, f"Project name was not correctly updated"
@@ -173,7 +173,7 @@ def step_impl(context):
 def step_impl(context):
     session = SessionLocal()
     try:
-        project = context.database.query(models.Project).filter(models.Project.id == context.project_id).first()
+        project = session.query(models.Project).filter(models.Project.id == context.project_id).first()
         updated = (project.name != context.new_project_name and project.description != context.new_project_description \
                     and project.roles and project.roles[0].name != context.new_role_name)
         assert updated, f"Project name was incorrectly updated"
@@ -245,7 +245,7 @@ def step_impl(context, role_name):
 def step_impl(context):
     session = SessionLocal()
     try:
-        project = context.database.query(models.Project).filter(models.Project.id == context.project_id).first()
+        project = session.query(models.Project).filter(models.Project.id == context.project_id).first()
         assert project.roles[0].name != project.roles[1].name, f"Project name was incorrectly updated"
         assert context.response.status_code != 204, "Incorrect status code"
     finally:

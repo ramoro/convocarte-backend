@@ -168,8 +168,8 @@ class Role(Base):
 
     # Define la relación inversa con el proyecto al que esta asociado
     project = relationship("Project", back_populates="roles")
-    # Relación inversa con ExposedRole
-    exposed_roles = relationship("ExposedRole", back_populates="role")
+    # Relación inversa con OpenRole
+    open_roles = relationship("OpenRole", back_populates="role")
 
 class CastingCall(Base):
     __tablename__ = "casting_calls"
@@ -190,8 +190,8 @@ class CastingCall(Base):
     # Relación inversa con Project
     project = relationship("Project", back_populates="casting_calls")  
 
-    # Relación inversa con ExposedRole
-    exposed_roles = relationship("ExposedRole", back_populates="casting_call")
+    # Relación inversa con OpenRole
+    open_roles = relationship("OpenRole", back_populates="casting_call")
 
     # Relación inversa con CastingPostulation
     casting_postulations = relationship("CastingPostulation", back_populates="casting_call")
@@ -208,8 +208,8 @@ class Form(Base):
 
     # Define la relación con FormField
     form_fields = relationship("FormField", back_populates="form")
-    # Relación inversa con ExposedRole
-    exposed_roles = relationship("ExposedRole", back_populates="form")
+    # Relación inversa con OpenRole
+    open_roles = relationship("OpenRole", back_populates="form")
 
 class FormField(Base):
     __tablename__ = "form_fields"
@@ -225,8 +225,8 @@ class FormField(Base):
     # Define la relación inversa
     form = relationship("Form", back_populates="form_fields")
 
-class ExposedRole(Base):
-    __tablename__ = "exposed_roles"
+class OpenRole(Base):
+    __tablename__ = "open_roles"
     id = Column(Integer, primary_key=True, nullable=False)
     casting_call_id = Column(Integer, ForeignKey('casting_calls.id', ondelete="CASCADE"), nullable=False)
     role_id = Column(Integer, ForeignKey('roles.id', ondelete="CASCADE"), nullable=False)
@@ -243,17 +243,17 @@ class ExposedRole(Base):
     spots_amount = Column(Integer)
     occupied_spots = Column(Integer)
 
-    casting_call = relationship("CastingCall", back_populates="exposed_roles")  # Relación con CastingCall
-    role = relationship("Role", back_populates="exposed_roles")  # Relación con Role
-    form = relationship("Form", back_populates="exposed_roles")  # Relación con Form
-    casting_postulations = relationship("CastingPostulation", back_populates="exposed_role")
+    casting_call = relationship("CastingCall", back_populates="open_roles")  # Relación con CastingCall
+    role = relationship("Role", back_populates="open_roles")  # Relación con Role
+    form = relationship("Form", back_populates="open_roles")  # Relación con Form
+    casting_postulations = relationship("CastingPostulation", back_populates="open_role")
 
 class CastingPostulation(Base):
     __tablename__ = "casting_postulations"
     id = Column(Integer, primary_key=True, nullable=False)
     owner_id = Column(Integer, ForeignKey('users.id', ondelete="CASCADE"), nullable=False, index=True)
     casting_call_id = Column(Integer, ForeignKey('casting_calls.id', ondelete="CASCADE"), nullable=False, index=True)
-    exposed_role_id = Column(Integer, ForeignKey('exposed_roles.id', ondelete="CASCADE"), nullable=False, index=True)
+    open_role_id = Column(Integer, ForeignKey('open_roles.id', ondelete="CASCADE"), nullable=False, index=True)
     state = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text('now()'))
     deleted_at = Column(TIMESTAMP(timezone=True))
@@ -261,7 +261,7 @@ class CastingPostulation(Base):
 
     # Relaciones
     casting_call = relationship("CastingCall", back_populates="casting_postulations")
-    exposed_role = relationship("ExposedRole", back_populates="casting_postulations")
+    open_role = relationship("OpenRole", back_populates="casting_postulations")
 
     # Métodos para el manejo de postulation_data que se almacenara como JSON en la bdd
     def set_postulation_data(self, data):

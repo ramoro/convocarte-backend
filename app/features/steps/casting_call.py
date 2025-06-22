@@ -116,7 +116,7 @@ def step_impl(context, project_name, role_name, template_title):
 def step_impl(context, casting_call_title):
     session = SessionLocal()
     try:
-        casting_call = context.database.query(models.CastingCall).filter(models.CastingCall.title == casting_call_title).first()
+        casting_call = session.query(models.CastingCall).filter(models.CastingCall.title == casting_call_title).first()
         assert casting_call is not None, f"Casting call with title {casting_call_title} was not created"
         assert casting_call.state == "Borrador", f"Casting call was not created as draft"
     finally:
@@ -126,7 +126,7 @@ def step_impl(context, casting_call_title):
 def step_impl(context, form_title):
     session = SessionLocal()
     try:
-        form = context.database.query(models.Form).filter(and_(
+        form = session.query(models.Form).filter(and_(
                 models.Form.form_title == form_title,
                 models.Form.casting_call_id == context.casting_call_id
         )).options(joinedload(models.Form.form_fields)).first()
@@ -534,7 +534,7 @@ def step_impl(context, current_casting_title, new_casting_title, role_name, min_
                 models.Role.project_id == project.id,
                 models.Role.name == role_name
         )).first()
-        exposed_role = next((exposed_role for exposed_role in casting_call.exposed_roles if exposed_role.role_id == role.id), None)
+        open_role = next((open_role for open_role in casting_call.open_roles if open_role.role_id == role.id), None)
         casting_call_data = {
         "casting_state": casting_call.state,
         "title": new_casting_title,
@@ -542,7 +542,7 @@ def step_impl(context, current_casting_title, new_casting_title, role_name, min_
         "remuneration_type":  casting_call.remuneration_type,
         "casting_roles": json.dumps(  # Enviar los roles como un array de objetos JSON
                 {
-                    "id": exposed_role.id,
+                    "id": open_role.id,
                     "role_id": role.id,
                     "has_limited_spots": False,
                     "min_age_required":  min_age_required
@@ -565,10 +565,10 @@ def step_impl(context, new_casting_title, role_name, min_age_required):
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
         #filtrar el rol con el id igual al updated_role_id del contexto
-        updated_exposed_role = casting_call.exposed_roles[0]
+        updated_open_role = casting_call.open_roles[0]
         
         assert casting_call.title == new_casting_title, "Casting call was not updated."
-        assert updated_exposed_role.min_age_required == int(min_age_required), "Casting call role was not updated."
+        assert updated_open_role.min_age_required == int(min_age_required), "Casting call role was not updated."
     finally:
         session.close()
 
@@ -578,9 +578,9 @@ def step_impl(context, new_casting_title_failed, role_name, min_age_required):
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
         
-        updated_exposed_role = casting_call.exposed_roles[0]        
+        updated_open_role = casting_call.open_roles[0]        
         assert casting_call.title != new_casting_title_failed, "Casting call was incorrectly updated."
-        assert updated_exposed_role.min_age_required != int(min_age_required), "Casting call role was incorrectly updated."
+        assert updated_open_role.min_age_required != int(min_age_required), "Casting call role was incorrectly updated."
     finally:
         session.close()
 
@@ -610,10 +610,10 @@ def step_impl(context):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
-        exposed_roles = context.database.query(models.ExposedRole).filter(models.ExposedRole.casting_call_id == context.casting_call_id).all()
+        open_roles = session.query(models.OpenRole).filter(models.OpenRole.casting_call_id == context.casting_call_id).all()
 
         assert casting_call.deleted_at is not None, "Casting call was not deleted."
-        assert len(exposed_roles) == 0, "Casting call was not deleted with its exposed roles."
+        assert len(open_roles) == 0, "Casting call was not deleted with its open roles."
 
     finally:
         session.close()
@@ -622,7 +622,7 @@ def step_impl(context):
 def step_impl(context):
     session = SessionLocal()
     try:
-        forms = context.database.query(models.Form).filter(models.Form.casting_call_id == context.casting_call_id).all()
+        forms = session.query(models.Form).filter(models.Form.casting_call_id == context.casting_call_id).all()
         assert len(forms) == 0, "Casting call forms were not deleted."
     finally:
         session.close()
@@ -632,10 +632,10 @@ def step_impl(context):
     session = SessionLocal()
     try:
         casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
-        exposed_roles = context.database.query(models.ExposedRole).filter(models.ExposedRole.casting_call_id == context.casting_call_id).all()
+        open_roles = session.query(models.OpenRole).filter(models.OpenRole.casting_call_id == context.casting_call_id).all()
         
         assert casting_call.deleted_at is None, "Casting call was deleted."
-        assert len(exposed_roles) > 0, "Casting call exposed roles were deleted"
+        assert len(open_roles) > 0, "Casting call open roles were deleted"
 
     finally:
         session.close()

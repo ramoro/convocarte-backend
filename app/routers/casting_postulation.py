@@ -9,7 +9,7 @@ from storage_managers.local_storage_manager import LocalStorageManager
 from storage_managers.cloud_storage_manager import CloudStorageManager, CLOUD_STORAGE_URL
 from config import settings
 from starlette import status
-from repository.exposed_role import ExposedRoleRepository
+from repository.open_role import OpenRoleRepository
 from repository.casting_postulation import CastingPostulationRepository
 from repository.form import FormRepository
 from schemas.casting_postulation import CastingPostulationResponse
@@ -45,7 +45,7 @@ async def create_casting_postulation(form_id: int = Form(...),
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="Invalid JSON format in postulation_data")
 
-    exposed_role_repository = ExposedRoleRepository(db)
+    open_role_repository = OpenRoleRepository(db)
     form_repository = FormRepository(db)
 
     #Validacion de existencia del form
@@ -55,27 +55,27 @@ async def create_casting_postulation(form_id: int = Form(...),
         raise HTTPException(status_code=404, 
                     detail=f"Form with id {form_id} not found.")
 
-    exposed_role_data = exposed_role_repository.get_exposed_role_with_casting_by_form_id(form_id)
+    open_role_data = open_role_repository.get_open_role_with_casting_by_form_id(form_id)
 
     #Validacion para caso en que rol este lleno
-    if exposed_role_data['has_limited_spots'] and exposed_role_data['occupied_spots'] >= exposed_role_data['spots_amount']:
+    if open_role_data['has_limited_spots'] and open_role_data['occupied_spots'] >= open_role_data['spots_amount']:
         raise HTTPException(status_code=400, 
-                            detail="The role exposed for this casting call is full. No more postulations are allowed.")
+                            detail="The role open for this casting call is full. No more postulations are allowed.")
     
     #Validacion para caso en el que el usuario ya se ha postulado para ese rol
     casting_postulation_repository = CastingPostulationRepository(db)
-    casting_postulation = casting_postulation_repository.get_casting_postulation_by_user_and_exposed_role(current_user.id, 
-                                                                                    exposed_role_data['exposed_role_id'])
+    casting_postulation = casting_postulation_repository.get_casting_postulation_by_user_and_open_role(current_user.id, 
+                                                                                    open_role_data['open_role_id'])
 
     if casting_postulation:
         raise HTTPException(status_code=400, 
                             detail="The user has already postulated for this role.")
     
     #Validacion para el caso en el que el casting haya finalizado o este pausado
-    if exposed_role_data["casting_call_state"] == "Finalizado":
+    if open_role_data["casting_call_state"] == "Finalizado":
         raise HTTPException(status_code=400, 
                             detail="The casting call for this role has already finished.")
-    elif exposed_role_data["casting_call_state"] == "Pausado":
+    elif open_role_data["casting_call_state"] == "Pausado":
         raise HTTPException(status_code=400, 
                             detail="The casting call for this role is paused.")
     
@@ -141,8 +141,8 @@ async def create_casting_postulation(form_id: int = Form(...),
         postulation_dict[filename_without_extension] = name_to_store
 
     #Crea postulacion para el casting
-    new_casting_postulation = {"casting_call_id": exposed_role_data['casting_call_id'],
-                            "exposed_role_id": exposed_role_data['exposed_role_id'],
+    new_casting_postulation = {"casting_call_id": open_role_data['casting_call_id'],
+                            "open_role_id": open_role_data['open_role_id'],
                             "owner_id": current_user.id,
                             "state": "Pendiente"
                             }
@@ -152,9 +152,9 @@ async def create_casting_postulation(form_id: int = Form(...),
                                                                                                 postulation_dict)
 
     #Aumentamos en uno los cupos ocupados para el rol expuesto en caso de que tenga cupos limitados
-    if exposed_role_data['has_limited_spots']:
-        exposed_role_repository.update_occupied_spots(exposed_role_data["exposed_role_id"], 
-                                                    exposed_role_data['occupied_spots'] + 1)
+    if open_role_data['has_limited_spots']:
+        open_role_repository.update_occupied_spots(open_role_data["open_role_id"], 
+                                                    open_role_data['occupied_spots'] + 1)
     
     return {'success': True, 'status_code': status.HTTP_201_CREATED, 'id': casting_postulation_created.id}
 

@@ -7,7 +7,7 @@ from dateutil import parser
 from schemas.project import ProjectResponse
 
 
-class CastingCallExposedRoleInfo(BaseModel):
+class CastingCallOpenRoleInfo(BaseModel):
     role_id: int
     min_age_required: Optional[int] = None
     max_age_required: Optional[int] = None
@@ -93,25 +93,25 @@ class CastingCallProject(BaseModel):
     category: str
     region: str
 
-class ExposedRoleForm(BaseModel):
+class OpenRoleForm(BaseModel):
     id: int
     form_title: str
 
-class ExposedRoleRoleData(BaseModel):
+class OpenRoleRoleData(BaseModel):
     id: int
     name: str
 
-class CastingCallExposedRole(CastingCallExposedRoleInfo):
+class CastingCallOpenRole(CastingCallOpenRoleInfo):
     id: int
-    form: ExposedRoleForm
-    role: ExposedRoleRoleData
+    form: OpenRoleForm
+    role: OpenRoleRoleData
 
 class CastingCallResponse(CastingCallPreviewResponse):
     description: Optional[str] = None
     state: str
     expiration_date: Optional[date] = None
     project: CastingCallProject
-    exposed_roles: List[CastingCallExposedRole]
+    open_roles: List[CastingCallOpenRole]
 
 class CastingCallFilter(BaseModel):
     date_order: str

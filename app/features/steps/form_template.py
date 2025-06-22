@@ -24,7 +24,7 @@ def step_impl(context, template_title):
 def step_impl(context, form_template_title):
     session = SessionLocal()
     try:
-        form_template = context.database.query(models.FormTemplate).filter(and_(
+        form_template = session.query(models.FormTemplate).filter(and_(
                 models.FormTemplate.form_template_title == form_template_title,
                 models.FormTemplate.owner_id == context.user_id
             )).first()
@@ -87,7 +87,7 @@ def step_impl(context, form_template_title):
     session = SessionLocal()
     try:
         form_template = (
-            context.database.query(models.FormTemplate)
+            session.query(models.FormTemplate)
             .filter(and_(
                 models.FormTemplate.id == context.responsejson["id"],
                 models.FormTemplate.owner_id == context.user_id
@@ -121,7 +121,7 @@ def step_impl(context, original_form_template_title):
     session = SessionLocal()
     try:
         form_template = (
-            context.database.query(models.FormTemplate)
+            session.query(models.FormTemplate)
             .filter(and_(
                 models.FormTemplate.form_template_title == original_form_template_title,
                 models.FormTemplate.owner_id == context.user_id
