@@ -131,3 +131,78 @@ class ProjectRepository:
             self.db.rollback()  # Rollbackea si algo falla
             print(f"Error occurred: {e}") 
             return None
+
+    def update_project_state(self, project):
+        """Recibe una entidad projecto, revisa si tiene algun casting publicado y en ese
+        caso se setea como que esta siendo usado. Caso contrario is_used se pasa a false."""
+        is_used = False
+        for casting_call in project.casting_calls:
+            if casting_call.state == "Publicado":
+                is_used = True
+        project.is_used = is_used
+        print(project.is_used)
+
+        self.db.commit()
+        return
+
+    def get_project_with_roles_and_castings_by_id(self, project_id):
+        project = (
+            self.db.query(models.Project)
+            .options(
+                joinedload(models.Project.roles),
+                joinedload(models.Project.casting_calls)
+            )
+            .filter(
+                and_(
+                    models.Project.id == project_id,
+                    models.Project.deleted_at == None
+                )
+            )
+            .first()
+        )
+
+        if not project:
+            return None
+
+        # Procesar los roles para incluir el nombre del usuario asignado
+        roles_with_assignee = []
+        for role in project.roles:
+            assigned_user_name = None
+            if role.assigned_user_id:
+                assigned_user = self.db.query(models.User).filter(
+                    models.User.id == role.assigned_user_id
+                ).first()
+                assigned_user_name = assigned_user.fullname if assigned_user else None
+
+            role_data = {
+                "id": role.id,
+                "name": role.name,
+                "description": role.description,
+                "assigned_user_name": assigned_user_name,
+            }
+            roles_with_assignee.append(role_data)
+
+        # Procesar los casting calls
+        castings = []
+        for casting in project.casting_calls:
+            if casting.deleted_at is None:
+                castings.append({
+                    "id": casting.id,
+                    "title": casting.title,
+                    "state": casting.state,
+                    "publication_date": casting.publication_date,
+                    "expiration_date": casting.expiration_date,
+                })
+
+        return {
+            "id": project.id,
+            "name": project.name,
+            "description": project.description,
+            "category": project.category,
+            "region": project.region,
+            "is_used": project.is_used,
+            "created_at": project.created_at,
+            "owner_id": project.owner_id,
+            "roles": roles_with_assignee,
+            "castings": castings
+        }

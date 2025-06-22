@@ -5,6 +5,7 @@ from datetime import datetime
 class Role(BaseModel):
     name: str
     description: Optional[str] = None
+    assigned_user_name: Optional[str] = None
 
 class RoleWithId(Role):
     id: int
@@ -25,8 +26,13 @@ class ProjectResponse(BaseModel):
     region: str
     description: Optional[str] = None
 
-class ProjectWithRolesResponse(ProjectResponse):
+class CastingCallProjectPreview(BaseModel):
+    title: str
+    state: str
+
+class ProjectWithRolesAndCastingsResponse(ProjectResponse):
     roles: List[RoleWithId]
+    castings: Optional[List[CastingCallProjectPreview]] = None
 
 class UpdateProject(BaseModel):
     name: str
