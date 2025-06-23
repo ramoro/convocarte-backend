@@ -28,6 +28,11 @@ def create_and_log_in_account(context, session):
         user_query.update({"is_verified": True}, synchronize_session=False)
         session.commit()
 
+    #Si fue eliminado lo seteamos como existente nuevamente
+    if existing_user and existing_user.deleted_at:
+        existing_user.deleted_at = None
+        session.commit()
+
     # Logeo con el usuario
     login_data = {
         "username": user_data["email"],

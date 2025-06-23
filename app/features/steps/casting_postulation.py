@@ -190,7 +190,7 @@ def step_impl(context):
 def step_impl(context):
     assert "casting call for this role is paused" in context.response.text, "Expected error message not found"
 
-@then('the user should be notified that the role open for this casting call is full')
+@then('the user should be notified that the open role for this casting call is full')
 def step_impl(context):
     assert "role open for this casting call is full" in context.response.text, "Expected error message not found"
 

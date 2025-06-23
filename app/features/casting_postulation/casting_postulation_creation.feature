@@ -63,7 +63,7 @@ Feature: Casting Postulation Creation
     And the open role "Neo" has all its 50 spots full
     When I postulate for the open role "Neo" within the published casting
     Then the postulation should not be created for the user
-    And the user should be notified that the role open for this casting call is full
+    And the user should be notified that the open role for this casting call is full
 
   Scenario: Unsuccessful Postulation for an open role for which the user has already applied
     Given Im logged in on the platform with my account
