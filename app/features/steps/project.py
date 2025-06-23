@@ -250,3 +250,54 @@ def step_the_project_roles_not_updated(context):
         assert context.response.status_code != 204, "Incorrect status code"
     finally:
         session.close()
+
+@when('I attempt to update the project deleting the role called "{role_name}"')
+def step_when_delete_role(context, role_name):
+    url = settings.backend_url + "/projects/{project_id}"
+    project_data = {field["field"]: field["value"] for field in context.table}
+
+    role_data = []
+    if "role_one" in project_data:
+        role_data = [{"name": project_data["role_one"]}]
+
+    project_updated_data = {"name": project_data["name"],
+                             "region": project_data["region"], 
+                             "category": project_data["category"], 
+                             "is_used": False,
+                             "roles": role_data}
+
+    headers = {
+        "Authorization": f"Bearer {context.token}"
+    }
+    
+    response = requests.put(url.format(project_id=context.project_id), json=project_updated_data, headers=headers)
+    context.response = response
+
+@then('the role "{role_name}" is removed from the project')
+def step_then_role_removed(context, role_name):
+    session = SessionLocal()
+    try:
+        project = session.query(models.Project).filter(models.Project.id == context.project_id).first()
+        assert len(project.roles) == 1, "Role was not removed from the project"
+        assert project.roles[0].name != role_name, "Role name does not match"
+    finally:
+        session.close()
+
+@then('the role "{role_name}" is not deleted')
+def step_then_role_not_removed(context, role_name):
+    session = SessionLocal()
+    try:
+        project = session.query(models.Project).filter(models.Project.id == context.project_id).first()
+        role_founded = False
+        for role in project.roles:
+            if role.name == role_name:
+                role_founded = True
+                break
+        assert len(project.roles) == 1, "Role was removed from the project"
+        assert role_founded, "Role was not found in the project"
+    finally:
+        session.close()
+
+@then('Im notified that the project cannot remain without roles')
+def step_then_user_notified_project_cannot_remain_without_roles(context):
+    assert "project must have at least one role" in context.response.text, "Expected error message not found"
