@@ -65,6 +65,8 @@ def after_scenario(context, scenario):
         session.execute("DELETE FROM casting_calls;")
         session.execute("DELETE FROM projects;")
         session.execute("DELETE FROM messages;")
+        session.execute("DELETE FROM casting_postulations;")
+
 
         
         # Confirmar los cambios
