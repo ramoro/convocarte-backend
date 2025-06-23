@@ -87,7 +87,7 @@ Feature: Casting Call Publication
     And the user should be notified that the casting cannot be published because it has already ended
 
   Scenario: Unsuccessful publication of a casting with a title already used by other published casting
-    Given a user that has a published theater casting with title "Searching Neo For Matrix 4"
+    Given a user that has a published theater casting with title "Searching Neo For Matrix 4" and open role "Neo"
       | field                | value               |
       | fullname             | Albus Dumbledore    |
       | email                | albus@bigwizard.com |

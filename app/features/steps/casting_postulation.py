@@ -153,8 +153,9 @@ def make_postulation(context):
 
         response = requests.post(url, data=postulation_data, headers=headers)
         context.response = response
+        context.postulation_id = context.response.json().get("id", -1)    
     finally:
-        session.close()  
+        session.close() 
 
 @given('I postulate for the open role "{role_name}" within the published casting')
 def step_impl(context, role_name):
@@ -192,7 +193,7 @@ def step_impl(context):
 
 @then('the user should be notified that the open role for this casting call is full')
 def step_impl(context):
-    assert "role open for this casting call is full" in context.response.text, "Expected error message not found"
+    assert "open role for this casting call is full" in context.response.text, "Expected error message not found"
 
 @then('the user should be notified that they has already postulated for that role')
 def step_impl(context):

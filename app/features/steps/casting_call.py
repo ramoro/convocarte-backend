@@ -456,13 +456,14 @@ def step_impl(context):
 def step_impl(context):
     assert "casting cannot be finished because it hasn't been published yet" in context.response.text, "Expected error message not found."
 
-@given('a user that has a published theater casting with title "{other_casting_title}"')
-def step_impl(context, other_casting_title):
+@given('a user that has a published {casting_category} casting with title "{other_casting_title}" and open role "{role_name}"')
+def step_given_user_has_casting_published(context, other_casting_title, role_name, casting_category):
     session = SessionLocal()
     try:
         #Creamos otro usuario de prueba y lo logeamos para crear lo necesario para publicar un casting
         response = create_and_log_in_account(context, session)
         token = response.json().get('token')
+        context.casting_director_id = response.json().get('id')
 
         #Le creamos un form template
         url = settings.backend_url + "/form-templates/"
@@ -474,10 +475,9 @@ def step_impl(context, other_casting_title):
         form_template_response = requests.post(url, json=form_template_data, headers=headers)
         form_template_id = form_template_response.json().get('id')
         #Le creamos un proyecto y un casting asociado a ese proyecto con el titulo other_casting_title
-        role_name = "Rol protagonico"
         url = settings.backend_url + "/projects/"
         role_data = {"name": role_name}
-        project_data = {"name": "Matrix y algo mas", "region": "CABA", "category": "Cine-largometraje", "roles": [role_data]}
+        project_data = {"name": "Matrix y algo mas", "region": "CABA", "category": casting_category, "roles": [role_data]}
         headers = {
             "Authorization": f"Bearer {token}"
         }
@@ -520,6 +520,8 @@ def step_impl(context, other_casting_title):
         }
 
         response = requests.patch(url, json=publication_data, headers=headers)
+        context.casting_call_id = casting_id
+        context.role_id = role.id
 
     finally:
         session.close()
