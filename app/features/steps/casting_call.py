@@ -451,7 +451,7 @@ def step_impl(context):
 def step_impl(context):
     assert "casting cannot be finished because it hasn't been published yet" in context.response.text, "Expected error message not found."
 
-@given('a user that has a published casting with title "{other_casting_title}"')
+@given('a user that has a published theater casting with title "{other_casting_title}"')
 def step_impl(context, other_casting_title):
     session = SessionLocal()
     try:
@@ -646,3 +646,15 @@ def step_impl(context):
 @then('the user should be notified that the casting call cant be deleted cause its paused')
 def step_impl(context):
     assert "casting call cant be deleted cause its paused" in context.response.text, "Expected error message not found."
+
+@then('the casting call is deleted from the system')
+def step_then_casting_call_deleted(context):
+    session = SessionLocal()
+    try:
+        casting_call = session.query(models.CastingCall).filter(models.CastingCall.id == context.casting_call_id).first()
+       # open_roles = context.database.query(models.OpenRole).filter(models.OpenRole.casting_call_id == context.casting_call_id).all()
+
+        assert casting_call.deleted_at is not None, "Casting call was not deleted."
+
+    finally:
+        session.close()
