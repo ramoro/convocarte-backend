@@ -30,6 +30,7 @@ Feature: Project Deletion
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
       | remuneration_type         | Remunerado |
+    And I publish the casting call with an expiration date greater than the current date
     When I try to delete the project
     Then the project should not be eliminated from the system
     And the user should be notified that the project is being used and must end the castings that are using it in order to delete the project

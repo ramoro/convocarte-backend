@@ -19,7 +19,7 @@ Feature: Project Update
     | new_role_name            | Trinity                         |
     Then the project information should be successfully updated on the system
 
-  Scenario: Unsuccessful edition of Project within an unended casting
+  Scenario: Unsuccessful edition of Project within a published casting
     Given Im logged in on the platform with my account
     | field                | value                |
     | fullname             | Frodo Bolson         |
@@ -36,6 +36,7 @@ Feature: Project Update
       | field                     | value                      |
       | title                     | Searching Neo For Matrix 4 |
       | remuneration_type         | Remunerado |
+    And I publish the casting call with an expiration date greater than the current date
     When I try to edit project name, project description and role name
       | field                    | value                           |
       | new_name                 | Matrix renovado 4               |
@@ -44,7 +45,7 @@ Feature: Project Update
       | category                 | Cine-largometraje               |
       | new_role_name            | Trinity                         |
     Then the project information should not be successfully updated on the system
-    And the user should be notified that the project is being used and must end the castings that are using it in order to update the project
+    And the user should be notified that the project is being published and must stop the castings that are using it in order to update the project
     
   Scenario: Successful edition of a project within ended castings
     Given Im logged in on the platform with my account

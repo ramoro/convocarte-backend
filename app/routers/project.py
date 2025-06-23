@@ -92,9 +92,10 @@ def delete_project(project_id: int, db: Session = Depends(get_db)):
                             detail=f"Project with id {project_id} not found.")
 
     #Si el proyecto esta siendo usado en algun casting no finalizado no puede eliminarse
-    if project.is_used:
-        raise HTTPException(status_code=400, 
-                            detail="The project cant be deleted cause its being used by a casting call.")
+    for casting_call in project.casting_calls:
+        if casting_call.state != "Finalizado" and casting_call.state != "Borrador":
+            raise HTTPException(status_code=400, 
+                                detail="The project cant be deleted cause its being used by a casting call.")
 
     deleted_project = project_repository.delete_project(project_id)
     
@@ -120,7 +121,7 @@ def update_project(project_id: int, updated_project: UpdateProject,
      #Si el proyecto esta siendo usado en algun casting no finalizado no puede editarse
     if project.is_used:
         raise HTTPException(status_code=400, 
-                            detail="The project cant be updated cause its being used by a casting call.")
+                            detail="The project cant be updated cause its being published by a casting call.")
 
     #Si el nombre del proyecto actualizado es diferente al que ya tenia hay que validar que el nuevo
     #nombre no sea igual al nombre de otro proyecto del usuario
